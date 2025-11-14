@@ -126,9 +126,11 @@ async def run_query(
 class FilterRequest(BaseModel):
     include: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Inclusion filters for categorical columns")
     exclude: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Exclusion filters for categorical columns")
+    offset: Optional[int] = Field(..., description="Start the result from a particular row")
+    limit: Optional[int] = Field(..., description="Limit the result of the ouput")
 
 @app.post("/v1/chingu_members/filtered_table")
-async def query_filtered_table(filters: FilterRequest) -> List[Dict[str, Any]]:
+async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
     """Returns rows from the Chingu members table filtered by inclusion/exclusion criteria."""
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
@@ -137,36 +139,52 @@ async def query_filtered_table(filters: FilterRequest) -> List[Dict[str, Any]]:
         use_query_cache=True,
     )
 
-    if set(filters.exclude.keys()) & set(filters.include.keys()).len():
-        return HTTPException(status_code=400, detail="Cannon include and exclude the same column.")
+    # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
+    if set(filters.exclude.keys()) & set(filters.include.keys()):
+        return HTTPException(status_code=400, detail="Cannot include and exclude the same column.")
 
+    # Include predicates
     job_params = []
     for col_enum, include_categories in filters.include.items():
+        if not include_categories:
+            continue
+        
         query_sql += f" AND `{col_enum.value}` IN UNNEST(@{col_enum.value})"
         job_params.append(bigquery.ScalarQueryParameter(col_enum.value, "ARRAY<STRING>", include_categories))
 
+    # Exclude predicates
     for col_enum, include_categories in filters.exclude.items():
+        if not include_categories:
+            continue
+        
         query_sql += f" AND `{col_enum.value}` NOT IN UNNEST(@{col_enum.value})"
         job_params.append(bigquery.ScalarQueryParameter(col_enum.value, "ARRAY<STRING>", include_categories))
 
+    # Pagination window
+    if filters.offset is not None:
+        query_sql += f" OFFSET @window_offset"
+        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", filters.offset))
+
+    if filters.limit is not None:
+        query_sql += f" LIMIT @window_limit"
+        job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", filters.limit))
+
+    job_config.query_parameters = job_params
+
     query_sql += ";"
 
-    job_config.query_parameters.extend(job_params)
-
+    # Execute Query
     try:
-        query_result = bigquery_client.query(query_sql, job_config=job_config)
+        query_result = bigquery_client.query(query_sql, job_config=job_config).result()
         query_result_json: List[Dict[str, Any]] = [dict(row) for row in query_result]
         
         response = {
-            "row_count":len(query_result),
-            "schema": [row for row in query_result.schema],
+            "row_count":len(query_result_json),
+            "schema": [field.name for field in query_result.schema],
             "response":query_result_json
         }
         return response
     except GoogleCloudError as gce:
-        return HTTPException(status_code=502, detail=f"BigQuery error: {e}")
+        raise HTTPException(status_code=502, detail=f"BigQuery error: {gce}")
     except Exception as e:
-        return HTTPException(status_code=500, detail=str(e))
-    
-    
-    return response
+        raise HTTPException(status_code=500, detail=str(e))
