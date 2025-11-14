@@ -11,7 +11,7 @@ from typing import Any, List, Optional, Dict
 from enum import Enum
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Body, FastAPI, HTTPException, Query
 
 from google.cloud import bigquery
 from google.cloud.exceptions import GoogleCloudError
@@ -37,15 +37,15 @@ bigquery_client = bigquery.Client()
 # ---------------------------------------------------------------
 
 # TODO: build endpoint to display available categorical columns
-@app.get("/v1/chingu_members/categorical_columns")
+@app.get("/v1/chingu_members/chingu_attributes")
 async def get_categorical_columns() -> List[str]:
-    """List all allowed categorical columns"""
-    return [column.value for column in CategoricalColumns]
+    """List all allowed Chingu Attributes"""
+    return [attribute.value for attribute in ChinguAttributes]
 
 # ---------------------------------------------------------------
 
 
-class CategoricalColumns(str, Enum):
+class ChinguAttributes(str, Enum):
     """Enumerates columns permitted in aggregation & distinct-value queries."""
     GENDER = "Gender"
     COUNTRY_CODE = "Country_Code"
@@ -58,7 +58,7 @@ class CategoricalColumns(str, Enum):
 
 # TODO: build endpoint to get the unique values for a categorical column
 @app.get("/v1/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str])
-async def get_unique_values(chingu_attribute: CategoricalColumns) -> List[str]:
+async def get_unique_values(chingu_attribute: ChinguAttributes) -> List[str]:
     """Return all unique values in {chingu_attribute}."""
     query = f"""SELECT DISTINCT {chingu_attribute.value} FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
     
@@ -69,15 +69,15 @@ async def get_unique_values(chingu_attribute: CategoricalColumns) -> List[str]:
 
 # ---------------------------------------------------------------
 
-class CountBucket(BaseModel):
-    chingu_attribute: str
-    count: int
+# class CountBucket(BaseModel):
+#     chingu_attribute: str
+#     count: int
 
 class CountResponse(BaseModel):
     row_count: int
     response_schema: List[str]
     day_count: Optional[int] = None
-    response: List[CountBucket]
+    response: List[Any]
 
 
 @app.get(
@@ -86,14 +86,14 @@ class CountResponse(BaseModel):
         response_model_exclude_none=True
     )
 async def get_unique_count(
-    chingu_attribute: CategoricalColumns,
+    chingu_attribute: ChinguAttributes,
     start_date: Optional[date] = Query(None, description="Start date in YYYY-MM-DD format"),
     end_date: Optional[date] = Query(None, description="End date in YYYY-MM-DD format")
 ) -> Dict[str, Any]:
     """Returns the number of rows for each unique value in {chingu_attribute}.
     """
 
-    query_sql = f"""SELECT {chingu_attribute.value} as chingu_attribute, Count(*) as count
+    query_sql = f"""SELECT {chingu_attribute.value}, Count(*) as count
         FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
     """
     job_config = bigquery.QueryJobConfig(
@@ -140,12 +140,20 @@ async def get_unique_count(
 
 # ---------------------------------------------------------------
 
+example_filter = { 
+                    "include": {"Gender": ["FEMALE", "NON-BINARY"]},
+                    "exclude": {"Goal": ["GAIN EXPERIENCE"], "Source": ["LinkedIn","OTHER"]},
+                    "limit": 25,
+                    "offset": 0
+                }
+
 # TODO: put length restrictions on the List parameter
 class FilterRequest(BaseModel):
-    include: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Inclusion filters for categorical columns")
-    exclude: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Exclusion filters for categorical columns")
+    include: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
+    exclude: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
     offset: Optional[int] = Field(None, description="Start the result from a particular row")
-    limit: Optional[int] = Field(200, description="Limit the result of the ouput", ge=0)
+    limit: Optional[int] = Field(200, description="LIMIT the length of the output", ge=0)
+
 
 class FilteredTableResponse(BaseModel):
     row_count: int
@@ -154,11 +162,21 @@ class FilteredTableResponse(BaseModel):
     response: List[Dict[str, Any]]
 
 @app.post(
-        "/v1/chingu_members/filtered_table",
-        response_model=FilteredTableResponse
+        "/v1/chingu_members/table/filtered",
+        response_model=FilteredTableResponse,
+        openapi_extra={
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "example": example_filter
+                    }
+                }
+            }
+        },
     )
-async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
-    """Returns rows from the Chingu members table filtered by inclusion/exclusion criteria."""
+async def query_filtered_table(filters: FilterRequest = Body()) -> Dict[str, Any]:
+    """Returns rows from the Chingu members table filtered by their attributes.
+    """
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
@@ -167,8 +185,9 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
     )
 
     # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
-    if set(filters.exclude.keys()) & set(filters.include.keys()):
-        raise HTTPException(status_code=400, detail="Cannot include and exclude the same column.")
+    grey_attributes = set(filters.exclude.keys()) & set(filters.include.keys())
+    if grey_attributes:
+        raise HTTPException(status_code=400, detail=f"Cannot include and exclude the same column: {list(grey_attributes)}")
 
     # Include predicates
     job_params = []
@@ -220,11 +239,20 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
 @app.post(
         "/v1/chingu_members/Country_Code/COUNT/filtered",
         response_model=CountResponse,
-        response_model_exclude_none=True
+        response_model_exclude_none=True,
+        openapi_extra={
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "example": example_filter
+                    }
+                }
+            }
+        },
     )
-async def filter_location_count(filters: FilterRequest) -> Dict[str, Any]:
-    """Returns rows from the Chingu members table filtered by inclusion/exclusion criteria."""
-    query_sql = f"""SELECT `Country_Code` AS chingu_attribute, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
+async def filter_location_count(filters: FilterRequest = Body()) -> Dict[str, Any]:
+    """Returns the COUNT of Chingu members in each Country_Code. filtered by their attributes."""
+    query_sql = f"""SELECT `Country_Code`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
         dry_run=False,
