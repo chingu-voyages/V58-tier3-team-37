@@ -29,9 +29,17 @@ if (os.getenv('IS_PRODUCTION')!='True'):
     # In local/dev explicitly use credentials; Cloud Run uses its service account automatically
     GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
-app = FastAPI(title="DB access to Chingu Members on Google Cloud", version="0.1.0")
+app = FastAPI(title="Chingu Members on Google Cloud", version="0.1.0")
 
 bigquery_client = bigquery.Client()
+
+
+
+# TODO: build endpoint to display available categorical columns
+@app.get("/v1/chingu_members/categorical_columns")
+async def get_categorical_columns() -> List[str]:
+    """List all allowed categorical columns"""
+    return [column.value for column in CategoricalColumns]
 
 
 
@@ -48,32 +56,41 @@ class CategoricalColumns(str, Enum):
     ROLE = "Role"
 
 # TODO: build endpoint to get the unique values for a categorical column
-@app.get("/v1/chingu_members/{column}/UNIQUE")
-async def get_unique_values(column: CategoricalColumns) -> List[str]:
+@app.get("/v1/chingu_members/{category}/UNIQUE", response_model=List[str])
+async def get_unique_values(category: CategoricalColumns) -> List[str]:
     """Return all unique values in {column}."""
-    query = f"""SELECT DISTINCT {column.value} FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
+    query = f"""SELECT DISTINCT {category.value} FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
     
     query_result = bigquery_client.query(query).result()
-    unique_values = [row[column.value] for row in query_result if row is not None]
+    unique_values = [row[category.value] for row in query_result if row[category.value] is not None]
 
     return unique_values
 
-# TODO: build endpoint to display available categorical columns
-@app.get("/v1/chingu_members/categorical_columns")
-async def get_categorical_columns() -> List[str]:
-    """List all allowed categorical columns"""
-    return [column.value for column in CategoricalColumns]
+class CountBucket(BaseModel):
+    category: str
+    count: int
 
-@app.get("/chingu_members/{column}/COUNT/")
-async def run_query(
-    column: CategoricalColumns,
+class CountResponse(BaseModel):
+    row_count: int
+    response_schema: List[str]
+    day_count: Optional[int] = None
+    response: List[CountBucket]
+
+
+@app.get(
+        "/chingu_members/{category}/COUNT/",
+        response_model=CountResponse,
+        response_model_exclude_none=True
+    )
+async def get_unique_count(
+    category: CategoricalColumns,
     start_date: Optional[date] = Query(None, description="Start date in YYYY-MM-DD format"),
     end_date: Optional[date] = Query(None, description="End date in YYYY-MM-DD format")
 ) -> Dict[str, Any]:
     """Returns the number of rows for each unique value in {column}.
     """
 
-    query_sql = f"""SELECT {column.value}, Count(*) as count
+    query_sql = f"""SELECT {category.value} as category, Count(*) as count
         FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
     """
     job_config = bigquery.QueryJobConfig(
@@ -97,14 +114,14 @@ async def run_query(
         raise HTTPException(status_code=400, detail="start_date and end_date must be provided together")
 
 
-    query_sql += f""" GROUP BY {column.value};"""
+    query_sql += f""" GROUP BY {category.value};"""
     try:
         result = bigquery_client.query(query_sql, job_config=job_config).result()
         result_json: List[Dict[str, Any]] = [dict(row) for row in result]
 
         response = {
             "row_count": len(result_json),
-            "schema": [field.name for field in result.schema]
+            "response_schema": [field.name for field in result.schema]
         }
 
         if start_date and end_date:
@@ -126,10 +143,19 @@ async def run_query(
 class FilterRequest(BaseModel):
     include: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Inclusion filters for categorical columns")
     exclude: Optional[Dict[CategoricalColumns, List[str]]] = Field(default_factory=dict, description="Exclusion filters for categorical columns")
-    offset: Optional[int] = Field(..., description="Start the result from a particular row")
-    limit: Optional[int] = Field(..., description="Limit the result of the ouput")
+    offset: Optional[int] = Field(None, description="Start the result from a particular row")
+    limit: Optional[int] = Field(200, description="Limit the result of the ouput", ge=0)
 
-@app.post("/v1/chingu_members/filtered_table")
+class FilteredTableResponse(BaseModel):
+    row_count: int
+    response_schema: List[str]
+    # We don't know full table schema here; keep it flexible.
+    response: List[Dict[str, Any]]
+
+@app.post(
+        "/v1/chingu_members/filtered_table",
+        response_model=FilteredTableResponse
+    )
 async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
     """Returns rows from the Chingu members table filtered by inclusion/exclusion criteria."""
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
@@ -141,7 +167,7 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
 
     # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
     if set(filters.exclude.keys()) & set(filters.include.keys()):
-        return HTTPException(status_code=400, detail="Cannot include and exclude the same column.")
+        raise HTTPException(status_code=400, detail="Cannot include and exclude the same column.")
 
     # Include predicates
     job_params = []
@@ -150,7 +176,7 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
             continue
         
         query_sql += f" AND `{col_enum.value}` IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ScalarQueryParameter(col_enum.value, "ARRAY<STRING>", include_categories))
+        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
 
     # Exclude predicates
     for col_enum, include_categories in filters.exclude.items():
@@ -158,16 +184,15 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
             continue
         
         query_sql += f" AND `{col_enum.value}` NOT IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ScalarQueryParameter(col_enum.value, "ARRAY<STRING>", include_categories))
+        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
 
     # Pagination window
+    query_sql += f" LIMIT @window_limit"
+    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", filters.limit))
+    
     if filters.offset is not None:
         query_sql += f" OFFSET @window_offset"
         job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", filters.offset))
-
-    if filters.limit is not None:
-        query_sql += f" LIMIT @window_limit"
-        job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", filters.limit))
 
     job_config.query_parameters = job_params
 
@@ -179,9 +204,9 @@ async def query_filtered_table(filters: FilterRequest) -> Dict[str, Any]:
         query_result_json: List[Dict[str, Any]] = [dict(row) for row in query_result]
         
         response = {
-            "row_count":len(query_result_json),
-            "schema": [field.name for field in query_result.schema],
-            "response":query_result_json
+            "row_count": len(query_result_json),
+            "response_schema": [field.name for field in query_result.schema],
+            "response": query_result_json
         }
         return response
     except GoogleCloudError as gce:
