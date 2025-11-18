@@ -142,17 +142,13 @@ async def get_unique_count(
 
 example_filter = { 
                     "include": {"Gender": ["FEMALE", "NON-BINARY"]},
-                    "exclude": {"Goal": ["GAIN EXPERIENCE"], "Source": ["LinkedIn","OTHER"]},
-                    "limit": 25,
-                    "offset": 0
+                    "exclude": {"Goal": ["GAIN EXPERIENCE"], "Source": ["LinkedIn","OTHER"]}
                 }
 
 # TODO: put length restrictions on the List parameter
-class FilterRequest(BaseModel):
+class FilterBody(BaseModel):
     include: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
     exclude: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
-    offset: Optional[int] = Field(None, description="Start the result from a particular row")
-    limit: Optional[int] = Field(200, description="LIMIT the length of the output", ge=0)
 
 
 class FilteredTableResponse(BaseModel):
@@ -174,7 +170,11 @@ class FilteredTableResponse(BaseModel):
             }
         },
     )
-async def query_filtered_table(filters: FilterRequest = Body()) -> Dict[str, Any]:
+async def query_filtered_table(
+        filters: FilterBody = Body(),
+        offset: Optional[int] = Query(None, description="Start the result from a particular row"),
+        limit: Optional[int] = Query(200, description="LIMIT the length of the output", ge=0)
+    ) -> Dict[str, Any]:
     """Returns rows from the Chingu members table filtered by their attributes.
     """
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
@@ -184,10 +184,11 @@ async def query_filtered_table(filters: FilterRequest = Body()) -> Dict[str, Any
         use_query_cache=True,
     )
 
+    # Ensure the request didn't include AND exclude values for an Attribute
     # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
-    grey_attributes = set(filters.exclude.keys()) & set(filters.include.keys())
-    if grey_attributes:
-        raise HTTPException(status_code=400, detail=f"Cannot include and exclude the same column: {list(grey_attributes)}")
+    included_and_excluded = set(filters.exclude.keys()) & set(filters.include.keys())
+    if included_and_excluded:
+        raise HTTPException(status_code=400, detail=f"Cannot include and exclude the same column: {list(included_and_excluded)}")
 
     # Include predicates
     job_params = []
@@ -208,11 +209,11 @@ async def query_filtered_table(filters: FilterRequest = Body()) -> Dict[str, Any
 
     # Pagination window
     query_sql += f" LIMIT @window_limit"
-    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", filters.limit))
+    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", limit))
     
-    if filters.offset is not None:
+    if offset is not None:
         query_sql += f" OFFSET @window_offset"
-        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", filters.offset))
+        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", offset))
 
     job_config.query_parameters = job_params
 
@@ -250,7 +251,11 @@ async def query_filtered_table(filters: FilterRequest = Body()) -> Dict[str, Any
             }
         },
     )
-async def filter_location_count(filters: FilterRequest = Body()) -> Dict[str, Any]:
+async def filter_location_count(
+        filters: FilterBody = Body(),
+        offset: Optional[int] = Query(None, description="Start the result from a particular row"),
+        limit: Optional[int] = Query(200, description="LIMIT the length of the output", ge=0)
+    ) -> Dict[str, Any]:
     """Returns the COUNT of Chingu members in each Country_Code. filtered by their attributes."""
     query_sql = f"""SELECT `Country_Code`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
@@ -284,11 +289,11 @@ async def filter_location_count(filters: FilterRequest = Body()) -> Dict[str, An
 
     # Pagination window
     query_sql += f" LIMIT @window_limit"
-    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", filters.limit))
+    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", limit))
     
     if filters.offset is not None:
         query_sql += f" OFFSET @window_offset"
-        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", filters.offset))
+        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", offset))
 
     job_config.query_parameters = job_params
 
