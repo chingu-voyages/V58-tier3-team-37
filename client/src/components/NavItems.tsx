@@ -19,7 +19,9 @@ export default function NavItems() {
       >
         <Link to="/map">Map</Link>
       </li>
-      <li>List</li>
+      <li>
+        <Link to="/list">List</Link>
+      </li>
     </ul>
   );
 }
