@@ -1,4 +1,4 @@
 pandas
 ipykernel
 requests
-json
+country_converter
