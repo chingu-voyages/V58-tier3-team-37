@@ -51,9 +51,8 @@ class ChinguAttributes(str, Enum):
     COUNTRY_CODE = "Country_Code"
     GOAL = "Goal"
     SOURCE = "Source"
-    COUNTRY_NAME_FROM_COUNTRY = "Country_name_from_Country"
+    COUNTRY_NAME_FROM_COUNTRY = "Country_Name"
     SOLO_PROJECT_TIER = "Solo_Project_Tier"
-    ROLE_TYPE = "Role_Type"
     ROLE = "Role"
 
 # TODO: build endpoint to get the unique values for a categorical column
@@ -257,7 +256,7 @@ async def filter_location_count(
         limit: Optional[int] = Query(200, description="LIMIT the length of the output", ge=0)
     ) -> Dict[str, Any]:
     """Returns the COUNT of Chingu members in each Country_Code. filtered by their attributes."""
-    query_sql = f"""SELECT `Country_Code`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
+    query_sql = f"""SELECT `{ChinguAttributes.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
         dry_run=False,
@@ -285,7 +284,7 @@ async def filter_location_count(
         query_sql += f" AND `{col_enum.value}` NOT IN UNNEST(@{col_enum.value})"
         job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
 
-    query_sql += " GROUP BY `Country_Code`"
+    query_sql += f" GROUP BY `{ChinguAttributes.COUNTRY_CODE.value}`"
 
     # Pagination window
     query_sql += f" LIMIT @window_limit"
