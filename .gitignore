@@ -56,20 +56,6 @@ __pypackages__/
 .env.test.local
 .env.production.local
 
-# Data files (common data formats)
-*.csv
-*.json
-*.xlsx
-*.xls
-*.parquet
-*.pickle
-*.pkl
-*.h5
-*.hdf5
-*.db
-*.sqlite
-*.sqlite3
-
 # Large data directories
 data/
 
