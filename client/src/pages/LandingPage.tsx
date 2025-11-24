@@ -1,7 +1,9 @@
+import { Link } from "react-router-dom";
+
 export default function LandingPage() {
   return (
     <>
-      <div className="bg-background w-full p-16">
+      <div className="w-full p-16">
         <div className="flex max-w-3xl flex-col justify-center gap-8">
           <h1 className="mb-4 text-2xl font-bold">App Tagline</h1>
           <p>
@@ -10,12 +12,12 @@ export default function LandingPage() {
             assumenda animi quam ducimus aspernatur? Quo, fugit. Commodi
             deserunt vel tempore!
           </p>
-          <button className="bg-primary w-fit rounded-sm p-2">
-            Explore Now →
-          </button>
+          <Link to="/search">
+            <button className="btn btn-primary w-fit">Explore Now</button>
+          </Link>
         </div>
       </div>
-      <div className="">other content</div>
+      <div>other content</div>
     </>
   );
 }

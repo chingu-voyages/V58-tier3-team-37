@@ -1,8 +1,30 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url('./assets/fonts/OpenSans.ttf') format('truetype');
+    font-weight: 300 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url('./assets/fonts/OpenSans-Italic.ttf') format('truetype');
+    font-weight: 300 800;
+    font-style: italic;
+    font-display: swap;
+}
 
 @theme {
-    --color-primary: #D3D3D3;
-    --color-secondary: #4A4A4A;
-    --color-background: #f1f1f1;
-    --color-text: #b9b9b9;
+
+    --font-sans: 'Open Sans', sans-serif;
+
+    --color-primary: #23E095;
+    --color-secondary: #D69BCC;
+    --color-gradient: linear-gradient(180deg, #23E095 0%, #80DEE9 100%);
+    --color-secondary-gradient: linear-gradient(180deg, #D69BCC 0%, #FA819F 100%);
+    --color-background: #0C0D1E;
+    --color-text: #EBEBEB;
 }

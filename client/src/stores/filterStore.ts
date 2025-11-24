@@ -1,71 +1,96 @@
 import { create } from "zustand";
 
 interface FilterActions {
-  setGender: (gender: string) => void;
-  setCountryCode: (countryCode: string) => void;
-  setGoal: (goal: string) => void;
-  setSource: (source: string) => void;
   setCountryName: (countryName: string) => void;
-  setSoloProjectTier: (soloProjectTier: string) => void;
+  setGender: (gender: string) => void;
   setRole: (role: string) => void;
-  setRoleType: (roleType: string) => void;
+  setSoloProjectTier: (soloProjectTier: string) => void;
+  setVoyage: (voyage: string) => void;
+  setVoyageTier: (voyageTier: string) => void;
+  setYearJoined: (yearJoined: string) => void;
   resetFilters: () => void;
 }
 
 type FilterState = {
-  gender: string;
-  countryCode: string;
-  goal: string;
-  source: string;
   countryName: string;
-  soloProjectTier: string;
+  gender: string;
   role: string;
-  roleType: string;
+  soloProjectTier: string;
+  voyage: string;
+  voyageTier: string;
+  yearJoined: string;
   actions: FilterActions;
 };
 
 const useFilterStore = create<FilterState>((set) => ({
-  gender: "",
-  countryCode: "",
-  goal: "",
-  source: "",
   countryName: "",
-  soloProjectTier: "",
+  gender: "",
   role: "",
-  roleType: "",
+  soloProjectTier: "",
+  voyage: "",
+  voyageTier: "",
+  yearJoined: "",
   actions: {
-    setGender: (gender: string) => set({ gender }),
-    setCountryCode: (countryCode: string) => set({ countryCode }),
-    setGoal: (goal: string) => set({ goal }),
-    setSource: (source: string) => set({ source }),
     setCountryName: (countryName: string) => set({ countryName }),
-    setSoloProjectTier: (soloProjectTier: string) => set({ soloProjectTier }),
+    setGender: (gender: string) => set({ gender }),
     setRole: (role: string) => set({ role }),
-    setRoleType: (roleType: string) => set({ roleType }),
+    setSoloProjectTier: (soloProjectTier: string) => set({ soloProjectTier }),
+    setVoyage: (voyage: string) => set({ voyage }),
+    setVoyageTier: (voyageTier: string) => set({ voyageTier }),
+    setYearJoined: (yearJoined: string) => set({ yearJoined }),
     resetFilters: () =>
       set({
-        gender: "",
-        countryCode: "",
-        goal: "",
-        source: "",
         countryName: "",
-        soloProjectTier: "",
+        gender: "",
         role: "",
-        roleType: "",
+        soloProjectTier: "",
+        voyage: "",
+        voyageTier: "",
+        yearJoined: "",
       }),
   },
 }));
 
 export const useFilterActions = () => useFilterStore((state) => state.actions);
 
-export const useGender = () => useFilterStore((state) => state.gender);
-export const useCountryCode = () =>
-  useFilterStore((state) => state.countryCode);
-export const useGoal = () => useFilterStore((state) => state.goal);
-export const useSource = () => useFilterStore((state) => state.source);
 export const useCountryName = () =>
   useFilterStore((state) => state.countryName);
+
+export const useGender = () => useFilterStore((state) => state.gender);
+
+export const useRole = () => useFilterStore((state) => state.role);
+
 export const useSoloProjectTier = () =>
   useFilterStore((state) => state.soloProjectTier);
-export const useRole = () => useFilterStore((state) => state.role);
-export const useRoleType = () => useFilterStore((state) => state.roleType);
+
+export const useVoyage = () => useFilterStore((state) => state.voyage);
+
+export const useVoyageTier = () => useFilterStore((state) => state.voyageTier);
+
+export const useYearJoined = () => useFilterStore((state) => state.yearJoined);
+
+export const useHasFilters = () => {
+  const {
+    countryName,
+    gender,
+    role,
+    soloProjectTier,
+    voyage,
+    voyageTier,
+    yearJoined,
+  } = useFilterStore((state) => state);
+
+  const hasFilters = Object.values({
+    countryName,
+    gender,
+    role,
+    soloProjectTier,
+    voyage,
+    voyageTier,
+    yearJoined,
+  }).some((value) => value !== "");
+
+  return hasFilters;
+};
+
+export default useFilterStore;
