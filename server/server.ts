@@ -15,7 +15,9 @@ app.use(
     })
 );
 
-app.get("/", (_req, res) => res.send("Endpoints:" + "/members"));
+app.get("/", (_req, res) => {
+    res.send("Endpoints: /members");
+});
 
 app.post("/members", async (req, res) => {
     try {
