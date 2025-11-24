@@ -15,6 +15,10 @@ app.use(
     })
 );
 
+app.get("/", (_req, res) => {
+    res.send("Endpoints: /members");
+});
+
 app.post("/members", async (req, res) => {
     try {
         const response = await axios.post(
@@ -32,7 +36,7 @@ app.post("/members", async (req, res) => {
         res.json(response.data);
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Request failed" });
+        res.status(500).json({ error: "Request failed", details: err });
     }
 });
 
