@@ -1,4 +1,8 @@
 import { useState } from "react";
+import FemaleIcon from "../icons/FemaleIcon";
+import MaleIcon from "../icons/MaleIcon";
+import NonBinaryIcon from "../icons/NonBinaryIcon";
+import TransgenderIcon from "../icons/TransgenderIcon";
 import type { Member } from "../types/member";
 import cn from "../utils/cn";
 
@@ -11,6 +15,14 @@ export default function MemberCard({ member }: { member: Member }) {
     setExpanded((prev) => !prev);
   };
 
+  const genderIcons = {
+    male: <MaleIcon />,
+    female: <FemaleIcon />,
+    "non-binary": <NonBinaryIcon />,
+    transgender: <TransgenderIcon />,
+    "prefer not to say": <></>,
+  };
+
   return (
     <div
       onClick={toggleExpanded}
@@ -18,6 +30,7 @@ export default function MemberCard({ member }: { member: Member }) {
     >
       <div className="mb-2 flex justify-between border-b pb-2">
         <h3>{member.email}</h3>
+        {genderIcons[member.gender.toLowerCase() as keyof typeof genderIcons]}
       </div>
       <div className="flex flex-col gap-2">
         <p>

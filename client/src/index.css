@@ -28,3 +28,14 @@
     --color-background: #0C0D1E;
     --color-text: #EBEBEB;
 }
+
+@layer utilities {
+    .scrollbar-hidden::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-hidden {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}

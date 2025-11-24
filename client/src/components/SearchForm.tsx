@@ -10,7 +10,7 @@ import {
   ListboxOptions,
 } from "@headlessui/react";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   countries,
   genders,
@@ -74,9 +74,17 @@ export default function SearchForm() {
 
   const navigate = useNavigate();
 
+  const location = useLocation();
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/list");
+
+    const redirect = location.state?.redirectedFrom;
+    if (redirect && redirect === "/map") {
+      navigate("/map");
+    } else {
+      navigate("/list");
+    }
   };
 
   return (

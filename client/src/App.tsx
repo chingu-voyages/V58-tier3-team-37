@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="bg-background flex min-h-screen flex-col font-sans">
       <Header />
-      <main className="flex flex-grow flex-col justify-start">
+      <main className="mt-16 flex flex-grow flex-col justify-start">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/map" element={<MapPage />} />
