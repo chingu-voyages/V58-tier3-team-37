@@ -36,7 +36,7 @@ coding!
 
 -   Shruti Salunkhe : [GitHub](https://github.com/salunkhesshruti/) / [LinkedIn](https://www.linkedin.com/in/shruti-b/)
 -   Hyun Woo Kim: [GitHub](https://github.com/hynwkm) / [LinkedIn](https://www.linkedin.com/in/hyunwoo-kim/)
-
+-   Jessica Hackett: [GitHub](https://github.com/mooglemoxie0018) / [LinkedIn](https://www.linkedin.com/in/jessica-hackett/)
     ...
 
 -   Teammate name #n: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
