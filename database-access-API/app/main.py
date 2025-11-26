@@ -7,7 +7,7 @@ Error handling:
 """
 import os
 from datetime import date
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, Union
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -50,7 +50,7 @@ async def get_categorical_columns() -> List[str]:
 
 
 class CategoricalAttributes(str, Enum):
-    """Enumerates columns permitted in aggregation & distinct-value queries."""
+    """Attributes permitted in aggregation & UNIQUE-value queries."""
     GENDER = "Gender"
     COUNTRY_CODE = "Country_Code"
     COUNTRY_NAME_FROM_COUNTRY = "Country_Name"
@@ -62,8 +62,12 @@ class CategoricalAttributes(str, Enum):
     ROLE = "Role"
 
 class AttributeLists(str, Enum):
+    """Attributes about the Voyages the relative member signed up for"""
     VOYAGE_SIGNUP_IDS = "Voyage_Signup_ids"
     VOYAGE_TIERS = "Voyage_Tiers"
+
+list_attributes = {"Voyage_Signup_ids", "Voyage_Tiers"}
+int_attributes = {"Solo_Project_Tier", "GMT_Offset", "Voyage_Signup_ids"}
 
 @app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int])
 async def get_unique_values(chingu_attribute: CategoricalAttributes) -> List[str | int]:
@@ -78,9 +82,6 @@ async def get_unique_values(chingu_attribute: CategoricalAttributes) -> List[str
     return unique_values
 
 # ---------------------------------------------------------------
-# class CountBucket(BaseModel):
-#     chingu_attribute: str
-#     count: int
 
 class CountResponse(BaseModel):
     row_count: int
@@ -156,8 +157,8 @@ example_filter = {
 
 # TODO: put length restrictions on the List parameter
 class FilterBody(BaseModel):
-    include: Optional[Dict[CategoricalAttributes, List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
-    exclude: Optional[Dict[CategoricalAttributes, List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
+    include: Optional[Dict[Union[CategoricalAttributes, AttributeLists], List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
+    exclude: Optional[Dict[Union[CategoricalAttributes, AttributeLists], List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
 
 
 class FilteredTableResponse(BaseModel):
@@ -201,17 +202,18 @@ async def query_filtered_table(
     job_params = []
 
     # WHERE filter
-    int_attributes = {"Solo_Project_Tier", "GMT_Offset"}
-    excludes_at_one = 0
-    for predicate_map in [filters.include, filters.exclude]:
+    for excludes_at_one, predicate_map in enumerate([filters.include, filters.exclude]):
         for col_enum, attributes in predicate_map.items():
             BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
             MAYBE = "NOT" if excludes_at_one == 1 else ""
-
-            query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            if col_enum in CategoricalAttributes:
+                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            else:
+                # query_sql += f" AND {MAYBE} (ARRAY_LENGTH(ARRAY_INTERSECT(`{col_enum.value}`, @{col_enum.value})) > 0)"  # BigQuery Version
+                # job_config.use_legacy_sql = False  # for the BigQuery Version
+                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}))"  # ANSI SQL version
+            
             job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
-        
-        excludes_at_one = 1
 
     # Pagination window
     query_sql += f" LIMIT @window_limit"
@@ -276,17 +278,21 @@ async def filter_location_count(
     job_params = []
 
     # WHERE filter
-    int_attributes = {"Solo_Project_Tier", "GMT_Offset"}
-    excludes_at_one = 0
-    for predicate_map in [filters.include, filters.exclude]:
+    for excludes_at_one, predicate_map in enumerate([filters.include, filters.exclude]):
         for col_enum, attributes in predicate_map.items():
             BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
             MAYBE = "NOT" if excludes_at_one == 1 else ""
+            if col_enum in CategoricalAttributes:
+                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            else:
+                # BigQuery Version
+                # query_sql += f" AND {MAYBE} (ARRAY_LENGTH(ARRAY_INTERSECT(`{col_enum.value}`, @{col_enum.value})) > 0)"  
+                # job_config.use_legacy_sql = False  # for the BigQuery Version
 
-            query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+                # ANSI SQL version
+                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}))"  
+            
             job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
-        
-        excludes_at_one = 1
 
     query_sql += f" GROUP BY `{CategoricalAttributes.COUNTRY_CODE.value}`"
 
