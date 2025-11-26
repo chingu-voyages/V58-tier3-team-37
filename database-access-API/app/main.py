@@ -36,30 +36,41 @@ bigquery_client = bigquery.Client()
 
 # ---------------------------------------------------------------
 
+@app.get("/")
+def return_status() -> str:
+    return f"currently querying `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"
+
 # TODO: build endpoint to display available categorical columns
-@app.get("/v1/chingu_members/chingu_attributes")
+@app.get("/chingu_members/chingu_attributes")
 async def get_categorical_columns() -> List[str]:
     """List all allowed Chingu Attributes"""
-    return [attribute.value for attribute in ChinguAttributes]
+    return [attribute.value for attribute in CategoricalAttributes]
 
 # ---------------------------------------------------------------
 
 
-class ChinguAttributes(str, Enum):
+class CategoricalAttributes(str, Enum):
     """Enumerates columns permitted in aggregation & distinct-value queries."""
     GENDER = "Gender"
     COUNTRY_CODE = "Country_Code"
+    COUNTRY_NAME_FROM_COUNTRY = "Country_Name"
+    TIMEZONE = "Timezone"
+    GMT_OFFSET = "GMT_Offset"
     GOAL = "Goal"
     SOURCE = "Source"
-    COUNTRY_NAME_FROM_COUNTRY = "Country_Name"
     SOLO_PROJECT_TIER = "Solo_Project_Tier"
     ROLE = "Role"
 
-# TODO: build endpoint to get the unique values for a categorical column
-@app.get("/v1/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str])
-async def get_unique_values(chingu_attribute: ChinguAttributes) -> List[str]:
+class AttributeLists(str, Enum):
+    VOYAGE_SIGNUP_IDS = "Voyage_Signup_ids"
+    VOYAGE_TIERS = "Voyage_Tiers"
+
+@app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int])
+async def get_unique_values(chingu_attribute: CategoricalAttributes) -> List[str | int]:
     """Return all unique values in {chingu_attribute}."""
-    query = f"""SELECT DISTINCT {chingu_attribute.value} FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
+
+    # TODO: update this to return distinct attributes in AttributeLists as well
+    query = f"""SELECT DISTINCT `{chingu_attribute.value}` FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
     
     query_result = bigquery_client.query(query).result()
     unique_values = [row[chingu_attribute.value] for row in query_result if row[chingu_attribute.value] is not None]
@@ -67,7 +78,6 @@ async def get_unique_values(chingu_attribute: ChinguAttributes) -> List[str]:
     return unique_values
 
 # ---------------------------------------------------------------
-
 # class CountBucket(BaseModel):
 #     chingu_attribute: str
 #     count: int
@@ -85,14 +95,14 @@ class CountResponse(BaseModel):
         response_model_exclude_none=True
     )
 async def get_unique_count(
-    chingu_attribute: ChinguAttributes,
+    chingu_attribute: CategoricalAttributes,
     start_date: Optional[date] = Query(None, description="Start date in YYYY-MM-DD format"),
     end_date: Optional[date] = Query(None, description="End date in YYYY-MM-DD format")
 ) -> Dict[str, Any]:
     """Returns the number of rows for each unique value in {chingu_attribute}.
     """
 
-    query_sql = f"""SELECT {chingu_attribute.value}, Count(*) as count
+    query_sql = f"""SELECT `{chingu_attribute.value}`, Count(*) as count
         FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
     """
     job_config = bigquery.QueryJobConfig(
@@ -116,7 +126,7 @@ async def get_unique_count(
         raise HTTPException(status_code=400, detail="start_date and end_date must be provided together")
 
 
-    query_sql += f""" GROUP BY {chingu_attribute.value};"""
+    query_sql += f""" GROUP BY `{chingu_attribute.value}`;"""
     try:
         result = bigquery_client.query(query_sql, job_config=job_config).result()
         result_json: List[Dict[str, Any]] = [dict(row) for row in result]
@@ -146,8 +156,8 @@ example_filter = {
 
 # TODO: put length restrictions on the List parameter
 class FilterBody(BaseModel):
-    include: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
-    exclude: Optional[Dict[ChinguAttributes, List[str]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
+    include: Optional[Dict[CategoricalAttributes, List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
+    exclude: Optional[Dict[CategoricalAttributes, List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
 
 
 class FilteredTableResponse(BaseModel):
@@ -157,7 +167,7 @@ class FilteredTableResponse(BaseModel):
     response: List[Dict[str, Any]]
 
 @app.post(
-        "/v1/chingu_members/table/filtered",
+        "/chingu_members/table/filtered",
         response_model=FilteredTableResponse,
         openapi_extra={
             "requestBody": {
@@ -183,28 +193,25 @@ async def query_filtered_table(
         use_query_cache=True,
     )
 
-    # Ensure the request didn't include AND exclude values for an Attribute
     # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
-    included_and_excluded = set(filters.exclude.keys()) & set(filters.include.keys())
-    if included_and_excluded:
-        raise HTTPException(status_code=400, detail=f"Cannot include and exclude the same column: {list(included_and_excluded)}")
+    overlapping_attributes = set(filters.exclude.keys()) & set(filters.include.keys())
+    if overlapping_attributes:
+        raise HTTPException(status_code=400, detail=f"Cannot include and exclude from the same attributes: {overlapping_attributes}")
 
-    # Include predicates
     job_params = []
-    for col_enum, include_categories in filters.include.items():
-        if not include_categories:
-            continue
-        
-        query_sql += f" AND `{col_enum.value}` IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
 
-    # Exclude predicates
-    for col_enum, include_categories in filters.exclude.items():
-        if not include_categories:
-            continue
+    # WHERE filter
+    int_attributes = {"Solo_Project_Tier", "GMT_Offset"}
+    excludes_at_one = 0
+    for predicate_map in [filters.include, filters.exclude]:
+        for col_enum, attributes in predicate_map.items():
+            BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
+            MAYBE = "NOT" if excludes_at_one == 1 else ""
+
+            query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
         
-        query_sql += f" AND `{col_enum.value}` NOT IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
+        excludes_at_one = 1
 
     # Pagination window
     query_sql += f" LIMIT @window_limit"
@@ -237,7 +244,7 @@ async def query_filtered_table(
 
 
 @app.post(
-        "/v1/chingu_members/Country_Code/COUNT/filtered",
+        "/chingu_members/Country_Code/COUNT/filtered",
         response_model=CountResponse,
         response_model_exclude_none=True,
         openapi_extra={
@@ -251,12 +258,10 @@ async def query_filtered_table(
         },
     )
 async def filter_location_count(
-        filters: FilterBody = Body(),
-        offset: Optional[int] = Query(None, description="Start the result from a particular row"),
-        limit: Optional[int] = Query(200, description="LIMIT the length of the output", ge=0)
+        filters: FilterBody = Body()
     ) -> Dict[str, Any]:
     """Returns the COUNT of Chingu members in each Country_Code. filtered by their attributes."""
-    query_sql = f"""SELECT `{ChinguAttributes.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
+    query_sql = f"""SELECT `{CategoricalAttributes.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
         dry_run=False,
@@ -264,40 +269,31 @@ async def filter_location_count(
     )
 
     # NOTE: if ever relaxed, append _include/_exclude to ScalarQueryParameters for the predicates
-    if set(filters.exclude.keys()) & set(filters.include.keys()):
-        raise HTTPException(status_code=400, detail="Cannot include and exclude the same column.")
+    overlapping_attributes = set(filters.exclude.keys()) & set(filters.include.keys())
+    if overlapping_attributes:
+        raise HTTPException(status_code=400, detail=f"Cannot include and exclude from the same attributes: {overlapping_attributes}")
 
-    # Include predicates
     job_params = []
-    for col_enum, include_categories in filters.include.items():
-        if not include_categories:
-            continue
+
+    # WHERE filter
+    int_attributes = {"Solo_Project_Tier", "GMT_Offset"}
+    excludes_at_one = 0
+    for predicate_map in [filters.include, filters.exclude]:
+        for col_enum, attributes in predicate_map.items():
+            BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
+            MAYBE = "NOT" if excludes_at_one == 1 else ""
+
+            query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
         
-        query_sql += f" AND `{col_enum.value}` IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
+        excludes_at_one = 1
 
-    # Exclude predicates
-    for col_enum, include_categories in filters.exclude.items():
-        if not include_categories:
-            continue
-        
-        query_sql += f" AND `{col_enum.value}` NOT IN UNNEST(@{col_enum.value})"
-        job_params.append(bigquery.ArrayQueryParameter(col_enum.value, "STRING", include_categories))
-
-    query_sql += f" GROUP BY `{ChinguAttributes.COUNTRY_CODE.value}`"
-
-    # Pagination window
-    query_sql += f" LIMIT @window_limit"
-    job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", limit))
-    
-    if filters.offset is not None:
-        query_sql += f" OFFSET @window_offset"
-        job_params.append(bigquery.ScalarQueryParameter("window_offset", "INT64", offset))
+    query_sql += f" GROUP BY `{CategoricalAttributes.COUNTRY_CODE.value}`"
 
     job_config.query_parameters = job_params
 
-    query_sql += ";"
 
+    query_sql += ";"
     # Execute Query
     try:
         query_result = bigquery_client.query(query_sql, job_config=job_config).result()
