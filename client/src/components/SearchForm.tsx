@@ -91,9 +91,10 @@ export default function SearchForm() {
     <div className="flex justify-center p-4">
       <form onSubmit={(e) => onSubmit(e)} className="w-full max-w-2xl">
         <Fieldset className="space-y-4">
-          <Legend className="flex justify-center text-lg font-bold">
-            Who are you looking for?
+          <Legend className="m-0 flex justify-center text-xl font-bold">
+            Find Members
           </Legend>
+          <div className="divider divider-white m-0 mb-7" />
           <Field className="flex flex-col gap-2">
             <Label className="block">Gender</Label>
             <Listbox value={gender} onChange={setGender}>
@@ -124,7 +125,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -172,7 +173,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -243,7 +244,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -291,7 +292,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -339,7 +340,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -358,17 +359,19 @@ export default function SearchForm() {
             </Listbox>
           </Field>
         </Fieldset>
-        <div className="mt-4 flex justify-between space-y-4">
+        <div className="text-background-brand mt-10 flex justify-between space-y-4">
           <button
             onClick={(e) => {
               e.preventDefault();
               resetFilters();
             }}
-            className="btn btn-secondary w-32"
+            className="btn bg-secondary-brand text-background-brand w-32"
           >
             Clear Filters
           </button>
-          <button className="btn btn-primary w-32">Submit</button>
+          <button className="btn bg-primary-brand text-background-brand w-32">
+            Submit
+          </button>
         </div>
       </form>
     </div>
