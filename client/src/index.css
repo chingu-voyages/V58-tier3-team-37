@@ -21,12 +21,14 @@
 
     --font-sans: 'Open Sans', sans-serif;
 
-    --color-primary: #23E095;
-    --color-secondary: #D69BCC;
+    --color-primary-brand: #23E095;
+    --color-secondary-brand: #D69BCC;
     --color-gradient: linear-gradient(180deg, #23E095 0%, #80DEE9 100%);
     --color-secondary-gradient: linear-gradient(180deg, #D69BCC 0%, #FA819F 100%);
-    --color-background: #0C0D1E;
-    --color-text: #EBEBEB;
+    --color-background-brand: #0C0D1E;
+    --color-text-brand: #EBEBEB;
+
+    --color-primary-brand-hover: #1AC17F;
 }
 
 @layer utilities {

@@ -124,7 +124,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -172,7 +172,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -243,7 +243,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -291,7 +291,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -339,7 +339,7 @@ export default function SearchForm() {
                 anchor="bottom"
                 transition
                 className={cn(
-                  "bg-background w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
+                  "bg-background-brand w-(--button-width) rounded-xl border border-white/20 p-1 [--anchor-gap:--spacing(1)] focus:outline-none",
                   "transition duration-100 ease-in data-leave:data-closed:opacity-0",
                 )}
               >
@@ -364,11 +364,11 @@ export default function SearchForm() {
               e.preventDefault();
               resetFilters();
             }}
-            className="btn btn-secondary w-32"
+            className="btn btn-secondary-brand w-32"
           >
             Clear Filters
           </button>
-          <button className="btn btn-primary w-32">Submit</button>
+          <button className="btn btn-primary-brand w-32">Submit</button>
         </div>
       </form>
     </div>

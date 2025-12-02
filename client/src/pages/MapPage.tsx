@@ -34,7 +34,7 @@ export default function MapPage() {
 
   const createClusterIcon = (cluster: L.MarkerCluster) => {
     return L.divIcon({
-      html: `<div class="h-9 w-9 rounded-full -translate-1/4 flex items-center justify-center rounded-full bg-primary font-bold text-lg">${cluster.getChildCount()}</div>`,
+      html: `<div class="h-9 w-9 rounded-full -translate-1/4 flex items-center justify-center rounded-full bg-primary-brand font-bold text-lg">${cluster.getChildCount()}</div>`,
       className: "custom-cluster-icon",
     });
   };

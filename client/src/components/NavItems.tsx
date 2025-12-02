@@ -5,7 +5,7 @@ export default function NavItems() {
   const location = useLocation();
   const pathName = location.pathname;
   return (
-    <ul className="hidden w-1/2 justify-around sm:flex">
+    <ul className="menu menu-horizontal">
       <li
         className={cn(
           pathName === "/" ? "font-bold" : "",
