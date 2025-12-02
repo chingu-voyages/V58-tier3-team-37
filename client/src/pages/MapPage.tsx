@@ -125,10 +125,6 @@ export default function MapPage() {
     layer.setStyle(geoJsonHighlightStyle);
     layer.bringToFront();
   };
-  const resetHighlight = (e: L.LeafletMouseEvent) => {
-    const layer = e.target;
-    layer.setStyle(geoJsonStyle);
-  };
 
   const onEachFeature = (_feature: any, layer: L.Layer) => {
     layer.on({
@@ -175,15 +171,20 @@ export default function MapPage() {
           spiderfyOnMaxZoom={true}
           iconCreateFunction={createClusterIcon}
         >
-          {markers.map((marker, index) => (
-            <Marker
-              key={index}
-              position={[marker.position[0], marker.position[1]]}
-              icon={customIcon}
-            >
-              <Popup>{marker.popupText}</Popup>
-            </Marker>
-          ))}
+          {markers.map((marker, index) => {
+            if (!marker) {
+              return null;
+            }
+            return (
+              <Marker
+                key={index}
+                position={[marker.position[0], marker.position[1]]}
+                icon={customIcon}
+              >
+                <Popup>{marker.popupText}</Popup>
+              </Marker>
+            );
+          })}
         </MarkerClusterGroup>
       </MapContainer>
     </div>
