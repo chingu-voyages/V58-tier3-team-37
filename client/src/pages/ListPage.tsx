@@ -69,7 +69,6 @@ export default function ListPage() {
     }
     return true;
   });
-  console.log(filteredMembers);
 
   const [visibleCount, setVisibleCount] = useState(20);
 

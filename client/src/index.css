@@ -40,4 +40,9 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
+    .divider-white::before,
+    .divider-white::after {
+        background-color: var(--color-text-brand);
+    }
 }

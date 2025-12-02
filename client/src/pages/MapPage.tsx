@@ -8,13 +8,31 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { useNavigate } from "react-router-dom";
+import countries from "../assets/countries.json";
 import markerIcon from "../assets/images/maps-and-flags.png";
 import geoJsonData from "../assets/world.geo.json";
-import { useHasFilters } from "../stores/filterStore";
+import {
+  useCountryName,
+  useGender,
+  useHasFilters,
+  useRole,
+  useSoloProjectTier,
+  useVoyageTier,
+  useYearJoined,
+} from "../stores/filterStore";
+import { useMembers, useMembersActions } from "../stores/membersStore";
 
 export default function MapPage() {
   const hasFilters = useHasFilters();
   const navigate = useNavigate();
+  const members = useMembers();
+  const { fetchMembers } = useMembersActions();
+  const gender = useGender();
+  const countryName = useCountryName();
+  const yearJoined = useYearJoined();
+  const role = useRole();
+  const soloProjectTier = useSoloProjectTier();
+  const voyageTier = useVoyageTier();
 
   useEffect(() => {
     if (!hasFilters) {
@@ -22,10 +40,61 @@ export default function MapPage() {
     }
   }, [hasFilters]);
 
-  const markers = [
-    // Example marker data
-    { position: [48.8566, 2.3522], popupText: "Marker 1" },
-  ];
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const filteredMembers = members.filter((member) => {
+    if (gender !== "" && member.gender.toLowerCase() !== gender.toLowerCase()) {
+      return false;
+    }
+    if (
+      countryName !== "" &&
+      member.countryName.toLowerCase() !== countryName.toLowerCase()
+    ) {
+      return false;
+    }
+    if (role !== "" && member.role.toLowerCase() !== role.toLowerCase()) {
+      return false;
+    }
+    if (
+      soloProjectTier !== "" &&
+      member.soloProjectTier.toLowerCase() !== soloProjectTier.toLowerCase()
+    ) {
+      return false;
+    }
+    if (
+      voyageTier !== "" &&
+      member.voyageTier.toLowerCase() !== voyageTier.toLowerCase()
+    ) {
+      return false;
+    }
+    if (
+      yearJoined !== "" &&
+      new Date(member.timestamp).getFullYear().toString() !== yearJoined
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const countryLookup = Object.fromEntries(
+    countries.map((c) => [
+      c.country, // AD, US, CA etc
+      { lat: c.latitude, lng: c.longitude, name: c.name },
+    ]),
+  );
+
+  const markers = filteredMembers
+    .map((member, index) => {
+      const data = countryLookup[member.countryCode];
+      if (!data) return null;
+      return {
+        position: [data.lat, data.lng],
+        popupText: index,
+      };
+    })
+    .filter(Boolean);
 
   const customIcon = new Icon({
     iconUrl: markerIcon,
