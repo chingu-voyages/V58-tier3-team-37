@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router-dom";
@@ -12,11 +13,12 @@ import {
   useYearJoined,
 } from "../stores/filterStore";
 import { useMembers, useMembersActions } from "../stores/membersStore";
+import buildFilters from "../utils/buildFilters";
 
 export default function ListPage() {
   const hasFilters = useHasFilters();
   const members = useMembers();
-  const { fetchMembers } = useMembersActions();
+  const { fetchMembers, resetMembers, resetOffset } = useMembersActions();
   const gender = useGender();
   const countryName = useCountryName();
   const yearJoined = useYearJoined();
@@ -31,10 +33,6 @@ export default function ListPage() {
       navigate("/search", { state: { redirectedFrom: "/list" } });
     }
   }, [hasFilters]);
-
-  useEffect(() => {
-    fetchMembers();
-  }, []);
 
   const filteredMembers = members.filter((member) => {
     if (gender !== "" && member.gender.toLowerCase() !== gender.toLowerCase()) {
@@ -70,10 +68,24 @@ export default function ListPage() {
     return true;
   });
 
+  const filters = buildFilters(gender, countryName, role, soloProjectTier);
+
+  useEffect(() => {
+    resetMembers();
+    resetOffset();
+    setVisibleCount(20);
+    fetchMembers(filters);
+  }, [gender, countryName, role, soloProjectTier]);
+
   const [visibleCount, setVisibleCount] = useState(20);
 
   const loadMore = () => {
-    setVisibleCount((prev) => prev + 20);
+    const nextCount = visibleCount + 20;
+    setVisibleCount(nextCount);
+
+    if (nextCount > members.length) {
+      fetchMembers(filters);
+    }
   };
 
   const visibleMembers = filteredMembers.slice(0, visibleCount);
@@ -86,18 +98,30 @@ export default function ListPage() {
         id="membersScroll"
         className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
       >
-        <InfiniteScroll
-          dataLength={visibleMembers.length}
-          next={loadMore}
-          hasMore={hasMore}
-          loader={<p>Loading...</p>}
-          scrollableTarget="memberScroll"
-          className="flex flex-col gap-4"
-        >
-          {visibleMembers.map((member, index) => (
-            <MemberCard key={index} member={member} />
-          ))}
-        </InfiniteScroll>
+        {visibleMembers.length === 0 ? (
+          <div>
+            <p>No members found matching the selected filters.</p>
+            <button
+              className="btn bg-primary-brand border-primary-brand mt-4 border"
+              onClick={() => navigate("/search")}
+            >
+              Search Again
+            </button>
+          </div>
+        ) : (
+          <InfiniteScroll
+            dataLength={visibleMembers.length}
+            next={loadMore}
+            hasMore={hasMore}
+            loader={<p>Loading...</p>}
+            scrollableTarget="memberScroll"
+            className="flex flex-col gap-4"
+          >
+            {visibleMembers.map((member, index) => (
+              <MemberCard key={nanoid()} member={member} index={index} />
+            ))}
+          </InfiniteScroll>
+        )}
       </div>
     </div>
   );
