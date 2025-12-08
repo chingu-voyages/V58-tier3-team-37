@@ -23,11 +23,10 @@
 
     --color-primary-brand: #23E095;
     --color-secondary-brand: #D69BCC;
-    --color-gradient: linear-gradient(180deg, #23E095 0%, #80DEE9 100%);
-    --color-secondary-gradient: linear-gradient(180deg, #D69BCC 0%, #FA819F 100%);
     --color-background-brand: #0C0D1E;
     --color-text-brand: #EBEBEB;
-
+    --color-primary-gradient: #80DEE9;
+    --color-secondary-gradient: #FA819F;
     --color-primary-brand-hover: #1AC17F;
 }
 
@@ -45,4 +44,5 @@
     .divider-white::after {
         background-color: var(--color-text-brand);
     }
+
 }

@@ -3,14 +3,12 @@ import {
   Fieldset,
   Input,
   Label,
-  Legend,
   Listbox,
   ListboxButton,
   ListboxOption,
   ListboxOptions,
 } from "@headlessui/react";
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   countries,
   genders,
@@ -29,7 +27,7 @@ import {
 } from "../stores/filterStore";
 import cn from "../utils/cn";
 
-export default function SearchForm() {
+export default function FilterBar() {
   const gender = useGender();
   const countryName = useCountryName();
   const yearJoined = useYearJoined();
@@ -72,35 +70,23 @@ export default function SearchForm() {
     }
   }, [gender, countryName, yearJoined, role, soloProjectTier, voyageTier]);
 
-  const navigate = useNavigate();
-
-  const location = useLocation();
-
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    const redirect = location.state?.redirectedFrom;
-    if (redirect && redirect === "/map") {
-      navigate("/map");
-    } else {
-      navigate("/list");
-    }
   };
 
   return (
-    <div className="flex justify-center p-4">
-      <form onSubmit={(e) => onSubmit(e)} className="w-full max-w-2xl">
-        <Fieldset className="space-y-4">
-          <Legend className="m-0 flex justify-center text-xl font-bold">
-            Find Members
-          </Legend>
-          <div className="divider divider-white m-0 mb-7" />
+    <div className="z-30 flex justify-center p-4">
+      <form
+        onSubmit={(e) => onSubmit(e)}
+        className="flex w-full flex-col items-center"
+      >
+        <Fieldset className="flex flex-wrap items-start gap-2 px-2">
           <Field className="flex flex-col gap-2">
             <Label className="block">Gender</Label>
             <Listbox value={gender} onChange={setGender}>
               <ListboxButton
                 className={cn(
-                  "relative block w-full rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
+                  "relative block w-40 rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
@@ -148,7 +134,7 @@ export default function SearchForm() {
             <Listbox value={countryName} onChange={setCountryName}>
               <ListboxButton
                 className={cn(
-                  "relative block w-full rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
+                  "relative block w-96 rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
@@ -209,7 +195,7 @@ export default function SearchForm() {
                 }
               }}
               className={cn(
-                "mt-3 block w-full rounded-lg border-none bg-white/5 px-3 py-1.5 text-sm/6 text-white",
+                "block w-40 rounded-lg border-none bg-white/5 px-3 py-1.5 text-sm/6 text-white",
                 "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
               )}
             />
@@ -219,7 +205,7 @@ export default function SearchForm() {
             <Listbox value={role} onChange={setRole}>
               <ListboxButton
                 className={cn(
-                  "relative block w-full rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
+                  "relative block w-44 rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
@@ -359,7 +345,7 @@ export default function SearchForm() {
             </Listbox>
           </Field>
         </Fieldset>
-        <div className="text-background-brand mt-10 flex justify-between space-y-4">
+        {/* <div className="text-background-brand mt-10 flex justify-between space-y-4">
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -372,7 +358,7 @@ export default function SearchForm() {
           <button className="btn bg-primary-brand text-background-brand from-primary-brand to-primary-gradient w-32 hover:bg-linear-to-b">
             Submit
           </button>
-        </div>
+        </div> */}
       </form>
     </div>
   );

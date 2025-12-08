@@ -5,27 +5,27 @@ export default function NavItems() {
   const location = useLocation();
   const pathName = location.pathname;
   return (
-    <ul className="menu menu-horizontal">
+    <ul className="menu menu-horizontal gap-2">
       <li
         className={cn(
-          pathName === "/" ? "font-bold" : "",
-          "cursor-pointer hover:font-bold",
+          pathName === "/" ? "border-b-2" : "",
+          "cursor-pointer hover:border-b-2",
         )}
       >
         <Link to="/">Home</Link>
       </li>
       <li
         className={cn(
-          pathName === "/map" ? "font-bold" : "",
-          "cursor-pointer hover:font-bold",
+          pathName === "/map" ? "border-b-2" : "",
+          "cursor-pointer hover:border-b-2",
         )}
       >
         <Link to="/map">Map</Link>
       </li>
       <li
         className={cn(
-          pathName === "/list" ? "font-bold" : "",
-          "cursor-pointer hover:font-bold",
+          pathName === "/list" ? "border-b-2" : "",
+          "cursor-pointer hover:border-b-2",
         )}
       >
         <Link to="/list">List</Link>

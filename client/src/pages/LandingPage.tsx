@@ -5,8 +5,8 @@ export default function LandingPage() {
   return (
     <>
       <div className="relative flex min-h-screen w-full flex-1 items-stretch justify-center p-11 pt-16 sm:p-16">
-        <div className="absolute inset-0 z-1 bg-[url('/src/assets/images/background-mobile.webp')] bg-cover opacity-60 sm:hidden"></div>
-        <div className="absolute inset-0 z-1 hidden bg-[url('/src/assets/images/background.webp')] bg-cover opacity-60 sm:block"></div>
+        <div className="absolute inset-0 z-1 bg-[url('/background-mobile.webp')] bg-cover opacity-60 sm:hidden"></div>
+        <div className="absolute inset-0 z-1 hidden bg-[url('/background.webp')] bg-cover opacity-60 sm:block"></div>
         <div className="relative z-10 max-w-96 text-center">
           <div className="flex h-1/2 items-start justify-center">
             <h1 className="mb-4 text-2xl/10 font-bold">
@@ -17,7 +17,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-center">
             <div className="flex flex-col gap-14">
               <Link to="/search">
-                <button className="btn bg-primary-brand border-primary-brand relative w-fit border">
+                <button className="btn bg-primary-brand border-primary-brand from-primary-brand to-primary-gradient relative w-fit border hover:bg-linear-to-b">
                   Explore Now <RightArrow />
                 </button>
               </Link>
@@ -60,7 +60,7 @@ export default function LandingPage() {
               </p>
               <div className="card-actions justify-center">
                 <Link to="/search">
-                  <button className="btn bg-primary-brand border-primary-brand relative w-40 border">
+                  <button className="btn bg-primary-brand border-primary-brand from-primary-brand to-primary-gradient relative w-40 border hover:bg-linear-to-b">
                     Get Started
                     <div className="absolute right-2">
                       <RightArrow />

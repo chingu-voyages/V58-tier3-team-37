@@ -2,7 +2,7 @@ import L, { Icon } from "leaflet";
 import "leaflet.markercluster";
 import "leaflet/dist/leaflet.css";
 import { nanoid } from "nanoid";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
@@ -10,6 +10,7 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { useNavigate } from "react-router-dom";
 import countries from "../assets/countries.json";
 import markerIcon from "../assets/images/maps-and-flags.png";
+import FilterBar from "../components/FilterBar";
 import {
   useCountryName,
   useGender,
@@ -99,7 +100,7 @@ export default function MapPage() {
     resetMembers();
     resetOffset();
     fetchAllMembers(filters);
-  }, []);
+  }, [gender, countryName, role, soloProjectTier]);
 
   const filteredMembers = members.filter((member) => {
     if (gender !== "" && member.gender.toLowerCase() !== gender.toLowerCase()) {
@@ -142,64 +143,73 @@ export default function MapPage() {
     ]),
   );
 
-  const markers = filteredMembers
-    .map((member, index) => {
-      const data = countryLookup[member.countryCode];
-      if (!data) return null;
-      return {
-        position: [data.lat, data.lng],
-        popupText: `Chingu_${index + 1}`,
-      };
-    })
-    .filter(Boolean);
+  const markers = useMemo(() => {
+    return filteredMembers
+      .map((member, index) => {
+        const data = countryLookup[member.countryCode];
+        if (!data) return null;
+        return {
+          position: [data.lat, data.lng],
+          popupText: `Chingu_${index + 1}`,
+        };
+      })
+      .filter(Boolean);
+  }, [filteredMembers, countryLookup]);
 
   return (
-    <div className="m-auto h-11/12 w-11/12 p-4">
-      <MapContainer
-        center={[40, -100]}
-        zoom={4}
-        minZoom={3}
-        maxBounds={[
-          [-90, -180],
-          [90, 180],
-        ]}
-        maxBoundsViscosity={1}
-        className="h-full"
-      >
-        <TileLayer
-          url="https://tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=37f92206f78e4b5488df71090004fce9"
-          attribution='Maps &copy; <a href="https://www.thunderforest.com">Thunderforest</a>, Data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-          maxZoom={19}
-          noWrap={true}
-        />
+    <div className="flex h-screen flex-col">
+      <FilterBar />
+      <div className="z-0 m-auto h-11/12 w-11/12 p-4">
+        <MapContainer
+          center={[40, -100]}
+          zoom={4}
+          minZoom={3}
+          maxBounds={[
+            [-90, -180],
+            [90, 180],
+          ]}
+          maxBoundsViscosity={1}
+          className="h-full"
+        >
+          <TileLayer
+            url="https://tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=37f92206f78e4b5488df71090004fce9"
+            attribution='Maps &copy; <a href="https://www.thunderforest.com">Thunderforest</a>, Data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+            maxZoom={19}
+            noWrap={true}
+          />
 
-        {/* <GeoJSON
+          {/* <GeoJSON
           data={geoJsonData as GeoJsonObject}
           style={geoJsonStyle}
             onEachFeature={onEachFeature}
         /> */}
-        <MarkerClusterGroup
-          chunkedLoading
-          showCoverageOnHover={false}
-          spiderfyOnMaxZoom={true}
-          iconCreateFunction={createClusterIcon}
-        >
-          {markers.map((marker) => {
-            if (!marker) {
-              return null;
-            }
-            return (
-              <Marker
-                key={nanoid()}
-                position={[marker.position[0], marker.position[1]]}
-                icon={customIcon}
-              >
-                <Popup>{marker.popupText}</Popup>
-              </Marker>
-            );
-          })}
-        </MarkerClusterGroup>
-      </MapContainer>
+          <MarkerClusterGroup
+            chunkedLoading={true}
+            chunkInterval={50}
+            chunkDelay={20}
+            removeOutsideVisibleBounds={true}
+            maxClusterRadius={60}
+            showCoverageOnHover={false}
+            spiderfyOnMaxZoom={true}
+            iconCreateFunction={createClusterIcon}
+          >
+            {markers.map((marker) => {
+              if (!marker) {
+                return null;
+              }
+              return (
+                <Marker
+                  key={nanoid()}
+                  position={[marker.position[0], marker.position[1]]}
+                  icon={customIcon}
+                >
+                  <Popup>{marker.popupText}</Popup>
+                </Marker>
+              );
+            })}
+          </MarkerClusterGroup>
+        </MapContainer>
+      </div>
     </div>
   );
 }

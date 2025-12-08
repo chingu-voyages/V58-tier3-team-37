@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router-dom";
+import FilterBar from "../components/FilterBar";
 import MemberCard from "../components/MemberCard";
 import {
   useCountryName,
@@ -44,18 +45,25 @@ export default function ListPage() {
     ) {
       return false;
     }
-    if (role !== "" && member.role.toLowerCase() !== role.toLowerCase()) {
+    if (
+      role.trim() !== "" &&
+      !(
+        role.toLowerCase().includes(member.role.toLowerCase()) ||
+        (member.roleType &&
+          role.toLowerCase().includes(member.roleType.toLowerCase()))
+      )
+    ) {
       return false;
     }
     if (
       soloProjectTier !== "" &&
-      member.soloProjectTier.toLowerCase() !== soloProjectTier.toLowerCase()
+      !member.soloProjectTier.toLowerCase().includes(voyageTier.toLowerCase())
     ) {
       return false;
     }
     if (
       voyageTier !== "" &&
-      member.voyageTier.toLowerCase() !== voyageTier.toLowerCase()
+      !member.voyageTier.toLowerCase().includes(voyageTier.toLowerCase())
     ) {
       return false;
     }
@@ -93,35 +101,38 @@ export default function ListPage() {
   const hasMore = visibleMembers.length < filteredMembers.length;
 
   return (
-    <div className="flex w-full justify-center p-8">
-      <div
-        id="membersScroll"
-        className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
-      >
-        {visibleMembers.length === 0 ? (
-          <div>
-            <p>No members found matching the selected filters.</p>
-            <button
-              className="btn bg-primary-brand border-primary-brand mt-4 border"
-              onClick={() => navigate("/search")}
+    <div className="flex flex-col">
+      <FilterBar />
+      <div className="flex w-full justify-center p-8">
+        <div
+          id="membersScroll"
+          className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
+        >
+          {visibleMembers.length === 0 ? (
+            <div>
+              <p>No members found matching the selected filters.</p>
+              <button
+                className="btn bg-primary-brand border-primary-brand mt-4 border"
+                onClick={() => navigate("/search")}
+              >
+                Search Again
+              </button>
+            </div>
+          ) : (
+            <InfiniteScroll
+              dataLength={visibleMembers.length}
+              next={loadMore}
+              hasMore={hasMore}
+              loader={<p>Loading...</p>}
+              scrollableTarget="memberScroll"
+              className="flex flex-col gap-4"
             >
-              Search Again
-            </button>
-          </div>
-        ) : (
-          <InfiniteScroll
-            dataLength={visibleMembers.length}
-            next={loadMore}
-            hasMore={hasMore}
-            loader={<p>Loading...</p>}
-            scrollableTarget="memberScroll"
-            className="flex flex-col gap-4"
-          >
-            {visibleMembers.map((member, index) => (
-              <MemberCard key={nanoid()} member={member} index={index} />
-            ))}
-          </InfiniteScroll>
-        )}
+              {visibleMembers.map((member, index) => (
+                <MemberCard key={nanoid()} member={member} index={index} />
+              ))}
+            </InfiniteScroll>
+          )}
+        </div>
       </div>
     </div>
   );
