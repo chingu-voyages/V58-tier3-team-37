@@ -28,19 +28,19 @@ const customIcon = new Icon({
   iconSize: [38, 38],
 });
 
-const geoJsonStyle = {
-  fillColor: "#D3D3D3",
-  weight: 1,
-  opacity: 1,
-  color: "white",
-  fillOpacity: 0.7,
-};
-const geoJsonHighlightStyle = {
-  fillColor: "#FFA500",
-  weight: 2,
-  color: "#666",
-  fillOpacity: 0.7,
-};
+// const geoJsonStyle = {
+//   fillColor: "#D3D3D3",
+//   weight: 1,
+//   opacity: 1,
+//   color: "white",
+//   fillOpacity: 0.7,
+// };
+// const geoJsonHighlightStyle = {
+//   fillColor: "#FFA500",
+//   weight: 2,
+//   color: "#666",
+//   fillOpacity: 0.7,
+// };
 
 const createClusterIcon = (cluster: L.MarkerCluster) => {
   return L.divIcon({
