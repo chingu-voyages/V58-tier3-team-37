@@ -24,12 +24,12 @@ from dotenv import load_dotenv
 load_dotenv()
 GCP_PROJECT_ID = os.getenv('GCP_PROJECT_ID') or "v58-tier3-team-37"
 DATASET = os.getenv('DATASET') or "chingu_members"
-TABLE = os.getenv('TABLE') or "chingu_members_cleaned"
+TABLE = os.getenv('TABLE') or "chingu_members_extra_clean"
 if (os.getenv('IS_PRODUCTION')!='True'):
     # In local/dev explicitly use credentials; Cloud Run uses its service account automatically
     GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
-app = FastAPI(title="Chingu Member Demographics", version="0.1.0")
+app = FastAPI(title="Chingu Member Demographics", version="0.2.0")
 
 bigquery_client = bigquery.Client()
 
@@ -102,6 +102,14 @@ async def get_unique_count(
 ) -> Dict[str, Any]:
     """Returns the number of rows for each unique value in {chingu_attribute}.
     """
+
+    # TODO: Union List attributes, implment DISTINCT among lists:
+    # if chingu_attribute in AttributeLists:
+    #     SELECT DISTINCT x
+    #     FROM your_table t,
+    #     UNNEST(t.arr_col) AS x
+    #     ORDER BY x;
+
 
     query_sql = f"""SELECT `{chingu_attribute.value}`, Count(*) as count
         FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
