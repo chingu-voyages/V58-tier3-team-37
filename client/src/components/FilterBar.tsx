@@ -41,7 +41,6 @@ export default function FilterBar() {
     setRole,
     setSoloProjectTier,
     setVoyageTier,
-    resetFilters,
   } = useFilterActions();
 
   useEffect(() => {
