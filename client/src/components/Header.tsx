@@ -4,7 +4,7 @@ import NavItems from "./NavItems";
 export default function Header() {
   const date = new Date();
   return (
-    <header className="align-center bg-background-brand fixed z-20 flex h-16 w-full justify-between shadow-md">
+    <header className="align-center bg-background-brand fixed z-50 flex h-16 w-full justify-between shadow-md">
       <div className="navbar bg-background-brand flex w-full justify-between p-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-400" />
         <time className="block text-gray-600 sm:hidden">

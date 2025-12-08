@@ -1,6 +1,8 @@
+import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router-dom";
+import FilterBar from "../components/FilterBar";
 import MemberCard from "../components/MemberCard";
 import {
   useCountryName,
@@ -12,11 +14,12 @@ import {
   useYearJoined,
 } from "../stores/filterStore";
 import { useMembers, useMembersActions } from "../stores/membersStore";
+import buildFilters from "../utils/buildFilters";
 
 export default function ListPage() {
   const hasFilters = useHasFilters();
   const members = useMembers();
-  const { fetchMembers } = useMembersActions();
+  const { fetchMembers, resetMembers, resetOffset } = useMembersActions();
   const gender = useGender();
   const countryName = useCountryName();
   const yearJoined = useYearJoined();
@@ -32,10 +35,6 @@ export default function ListPage() {
     }
   }, [hasFilters]);
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
   const filteredMembers = members.filter((member) => {
     if (gender !== "" && member.gender.toLowerCase() !== gender.toLowerCase()) {
       return false;
@@ -46,18 +45,25 @@ export default function ListPage() {
     ) {
       return false;
     }
-    if (role !== "" && member.role.toLowerCase() !== role.toLowerCase()) {
+    if (
+      role.trim() !== "" &&
+      !(
+        role.toLowerCase().includes(member.role.toLowerCase()) ||
+        (member.roleType &&
+          role.toLowerCase().includes(member.roleType.toLowerCase()))
+      )
+    ) {
       return false;
     }
     if (
       soloProjectTier !== "" &&
-      member.soloProjectTier.toLowerCase() !== soloProjectTier.toLowerCase()
+      !member.soloProjectTier.toLowerCase().includes(voyageTier.toLowerCase())
     ) {
       return false;
     }
     if (
       voyageTier !== "" &&
-      member.voyageTier.toLowerCase() !== voyageTier.toLowerCase()
+      !member.voyageTier.toLowerCase().includes(voyageTier.toLowerCase())
     ) {
       return false;
     }
@@ -70,10 +76,24 @@ export default function ListPage() {
     return true;
   });
 
+  const filters = buildFilters(gender, countryName, role, soloProjectTier);
+
+  useEffect(() => {
+    resetMembers();
+    resetOffset();
+    setVisibleCount(20);
+    fetchMembers(filters);
+  }, [gender, countryName, role, soloProjectTier]);
+
   const [visibleCount, setVisibleCount] = useState(20);
 
   const loadMore = () => {
-    setVisibleCount((prev) => prev + 20);
+    const nextCount = visibleCount + 20;
+    setVisibleCount(nextCount);
+
+    if (nextCount > members.length) {
+      fetchMembers(filters);
+    }
   };
 
   const visibleMembers = filteredMembers.slice(0, visibleCount);
@@ -81,23 +101,38 @@ export default function ListPage() {
   const hasMore = visibleMembers.length < filteredMembers.length;
 
   return (
-    <div className="flex w-full justify-center p-8">
-      <div
-        id="membersScroll"
-        className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
-      >
-        <InfiniteScroll
-          dataLength={visibleMembers.length}
-          next={loadMore}
-          hasMore={hasMore}
-          loader={<p>Loading...</p>}
-          scrollableTarget="memberScroll"
-          className="flex flex-col gap-4"
+    <div className="flex flex-col">
+      <FilterBar />
+      <div className="flex w-full justify-center p-8">
+        <div
+          id="membersScroll"
+          className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
         >
-          {visibleMembers.map((member, index) => (
-            <MemberCard key={index} member={member} />
-          ))}
-        </InfiniteScroll>
+          {visibleMembers.length === 0 ? (
+            <div>
+              <p>No members found matching the selected filters.</p>
+              <button
+                className="btn bg-primary-brand border-primary-brand mt-4 border"
+                onClick={() => navigate("/search")}
+              >
+                Search Again
+              </button>
+            </div>
+          ) : (
+            <InfiniteScroll
+              dataLength={visibleMembers.length}
+              next={loadMore}
+              hasMore={hasMore}
+              loader={<p>Loading...</p>}
+              scrollableTarget="memberScroll"
+              className="flex flex-col gap-4"
+            >
+              {visibleMembers.map((member, index) => (
+                <MemberCard key={nanoid()} member={member} index={index} />
+              ))}
+            </InfiniteScroll>
+          )}
+        </div>
       </div>
     </div>
   );

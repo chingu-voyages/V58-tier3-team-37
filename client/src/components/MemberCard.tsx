@@ -6,7 +6,13 @@ import TransgenderIcon from "../icons/TransgenderIcon";
 import type { Member } from "../types/member";
 import cn from "../utils/cn";
 
-export default function MemberCard({ member }: { member: Member }) {
+export default function MemberCard({
+  member,
+  index,
+}: {
+  member: Member;
+  index: number;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const memberSinceYear = new Date(member.timestamp).getFullYear();
@@ -29,7 +35,7 @@ export default function MemberCard({ member }: { member: Member }) {
       className="flex cursor-pointer flex-col rounded-md border p-4 shadow-md"
     >
       <div className="mb-2 flex justify-between border-b pb-2">
-        <h3>{member.email}</h3>
+        <h3>Chingu_{index + 1}</h3>
         {genderIcons[member.gender.toLowerCase() as keyof typeof genderIcons]}
       </div>
       <div className="flex flex-col gap-2">

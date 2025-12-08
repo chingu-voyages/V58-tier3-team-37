@@ -2,12 +2,12 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export async function getAllMembers(offset = 0, limit = 100) {
+export async function getAllMembers(offset = 0, filters = {}, limit = 100) {
   try {
     const response = await axios.post(
       `${BASE_URL}/members?offset=${offset}&limit=${limit}`,
       {
-        include: {},
+        include: { ...filters },
         exclude: {},
       },
     );
