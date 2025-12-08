@@ -223,6 +223,9 @@ async def query_filtered_table(
             
             job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
 
+    # BQ doesn't gurantee a stable output order unless ORDER BY is given
+    query_sql += f" ORDER BY `id`"
+
     # Pagination window
     query_sql += f" LIMIT @window_limit"
     job_params.append(bigquery.ScalarQueryParameter("window_limit", "INT64", limit))
