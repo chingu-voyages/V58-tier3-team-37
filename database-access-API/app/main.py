@@ -7,7 +7,7 @@ Error handling:
 """
 import os
 from datetime import date
-from typing import Any, List, Optional, Dict, Union
+from typing import Any, List, Optional, Dict
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -22,10 +22,10 @@ from google.cloud.exceptions import GoogleCloudError
 from dotenv import load_dotenv
 
 load_dotenv()
-GCP_PROJECT_ID = os.getenv('GCP_PROJECT_ID') or "v58-tier3-team-37"
-DATASET = os.getenv('DATASET') or "chingu_members"
-TABLE = os.getenv('TABLE') or "chingu_members_extra_clean"
-if (os.getenv('IS_PRODUCTION')!='True'):
+GCP_PROJECT_ID = os.getenv('GCP_PROJECT_ID')
+DATASET = os.getenv('DATASET')
+TABLE = os.getenv('TABLE')
+if (os.getenv('IS_PRODUCTION') != 'True'):
     # In local/dev explicitly use credentials; Cloud Run uses its service account automatically
     GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
@@ -44,16 +44,16 @@ def return_status() -> str:
 @app.get("/chingu_members/chingu_attributes")
 async def get_categorical_columns() -> List[str]:
     """List all allowed Chingu Attributes"""
-    return [attribute.value for attribute in CategoricalAttributes]
+    return [attribute.value for attribute in (CategoricalAttribute)]
 
 # ---------------------------------------------------------------
 
 
-class CategoricalAttributes(str, Enum):
+class CategoricalAttribute(str, Enum):
     """Attributes permitted in aggregation & UNIQUE-value queries."""
     GENDER = "Gender"
     COUNTRY_CODE = "Country_Code"
-    COUNTRY_NAME_FROM_COUNTRY = "Country_Name"
+    COUNTRY_NAME = "Country_Name"
     TIMEZONE = "Timezone"
     GMT_OFFSET = "GMT_Offset"
     GOAL = "Goal"
@@ -70,7 +70,7 @@ list_attributes = {"Voyage_Signup_ids", "Voyage_Tiers"}
 int_attributes = {"Solo_Project_Tier", "GMT_Offset", "Voyage_Signup_ids"}
 
 @app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int])
-async def get_unique_values(chingu_attribute: CategoricalAttributes) -> List[str | int]:
+async def get_unique_values(chingu_attribute: CategoricalAttribute) -> List[str | int]:
     """Return all unique values in {chingu_attribute}."""
 
     # TODO: update this to return distinct attributes in AttributeLists as well
@@ -96,7 +96,7 @@ class CountResponse(BaseModel):
         response_model_exclude_none=True
     )
 async def get_unique_count(
-    chingu_attribute: CategoricalAttributes,
+    chingu_attribute: CategoricalAttribute,
     start_date: Optional[date] = Query(None, description="Start date in YYYY-MM-DD format"),
     end_date: Optional[date] = Query(None, description="End date in YYYY-MM-DD format")
 ) -> Dict[str, Any]:
@@ -165,8 +165,8 @@ example_filter = {
 
 # TODO: put length restrictions on the List parameter
 class FilterBody(BaseModel):
-    include: Optional[Dict[Union[CategoricalAttributes, AttributeLists], List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
-    exclude: Optional[Dict[Union[CategoricalAttributes, AttributeLists], List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
+    include: Optional[Dict[CategoricalAttribute | AttributeLists, List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
+    exclude: Optional[Dict[CategoricalAttribute | AttributeLists, List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
 
 
 class FilteredTableResponse(BaseModel):
@@ -190,11 +190,11 @@ class FilteredTableResponse(BaseModel):
     )
 async def query_filtered_table(
         filters: FilterBody = Body(),
-        offset: Optional[int] = Query(None, description="Start the result from a particular row"),
+        offset: Optional[int] = Query(None, description="Start the result from a particular row", ge=0),
         limit: Optional[int] = Query(200, description="LIMIT the length of the output", ge=0)
     ) -> Dict[str, Any]:
-    """Returns rows from the Chingu members table filtered by their attributes.
-    """
+    """Returns rows from the Chingu members table. Result is filtered by given attributes in the request body."""
+    
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
@@ -214,14 +214,17 @@ async def query_filtered_table(
         for col_enum, attributes in predicate_map.items():
             BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
             MAYBE = "NOT" if excludes_at_one == 1 else ""
-            if col_enum in CategoricalAttributes:
-                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            if isinstance(col_enum, CategoricalAttribute):
+                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value}_filter)"
             else:
-                # query_sql += f" AND {MAYBE} (ARRAY_LENGTH(ARRAY_INTERSECT(`{col_enum.value}`, @{col_enum.value})) > 0)"  # BigQuery Version
+                # BigQuery Version
+                # query_sql += f" AND {MAYBE} (ARRAY_LENGTH(ARRAY_INTERSECT(`{col_enum.value}`, @{col_enum.value})) > 0)"  
                 # job_config.use_legacy_sql = False  # for the BigQuery Version
-                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}))"  # ANSI SQL version
+
+                # ANSI SQL version
+                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}_filter))"  
             
-            job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
+            job_params.append(bigquery.ArrayQueryParameter(f"{col_enum.value}_filter", BQ_TYPE, attributes))
 
     # BQ doesn't gurantee a stable output order unless ORDER BY is given
     query_sql += f" ORDER BY `id`"
@@ -270,11 +273,11 @@ async def query_filtered_table(
             }
         },
     )
-async def filter_location_count(
+async def filter_country_code_count(
         filters: FilterBody = Body()
     ) -> Dict[str, Any]:
-    """Returns the COUNT of Chingu members in each Country_Code. filtered by their attributes."""
-    query_sql = f"""SELECT `{CategoricalAttributes.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
+    """Returns the COUNT of Chingu members in each Country_Code. Result is filtered by given attributes in the request body."""
+    query_sql = f"""SELECT `{CategoricalAttribute.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
         dry_run=False,
@@ -293,19 +296,19 @@ async def filter_location_count(
         for col_enum, attributes in predicate_map.items():
             BQ_TYPE = "INT64" if col_enum.value in int_attributes else "STRING"
             MAYBE = "NOT" if excludes_at_one == 1 else ""
-            if col_enum in CategoricalAttributes:
-                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value})"
+            if isinstance(col_enum, CategoricalAttribute):
+                query_sql += f" AND `{col_enum.value}` {MAYBE} IN UNNEST(@{col_enum.value}_filter)"
             else:
                 # BigQuery Version
                 # query_sql += f" AND {MAYBE} (ARRAY_LENGTH(ARRAY_INTERSECT(`{col_enum.value}`, @{col_enum.value})) > 0)"  
                 # job_config.use_legacy_sql = False  # for the BigQuery Version
 
                 # ANSI SQL version
-                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}))"  
+                query_sql += f" AND {MAYBE} EXISTS (SELECT 1 FROM UNNEST(`{col_enum.value}`) v WHERE v IN UNNEST(@{col_enum.value}_filter))"  
             
-            job_params.append(bigquery.ArrayQueryParameter(col_enum.value, BQ_TYPE, attributes))
+            job_params.append(bigquery.ArrayQueryParameter(f"{col_enum.value}_filter", BQ_TYPE, attributes))
 
-    query_sql += f" GROUP BY `{CategoricalAttributes.COUNTRY_CODE.value}`"
+    query_sql += f" GROUP BY `{CategoricalAttribute.COUNTRY_CODE.value}`"
 
     job_config.query_parameters = job_params
 
@@ -326,3 +329,4 @@ async def filter_location_count(
         raise HTTPException(status_code=502, detail=f"BigQuery error: {gce}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
