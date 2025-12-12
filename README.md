@@ -1,41 +1,65 @@
-# voyage-tasks
+# Chinigu Map
 
-Your project's `readme` is as important to success as your code. For 
-this reason you should put as much care into its creation and maintenance
-as you would any other component of the application.
+Experience the World of Chingu With Your Own Eyes!
 
-If you are unsure of what should go into the `readme` let this article,
-written by an experienced Chingu, be your starting point - 
-[Keys to a well written README](https://tinyurl.com/yk3wubft).
+## Purpose
 
-And before we go there's "one more thing"! Once you decide what to include
-in your `readme` feel free to replace the text we've provided here.
+Visualize the locations of Chingus, the roles they fulfill, and the characteristics that distinguish each member in a single interactive map.
 
-> Own it & Make it your Own!
+## Major Functions
 
-## Team Documents
+-   Users can view a filterable list of Chingu members.
+-   Users can search Chingu members by gender, country, role, etc.
+-   Users can view Chingus on an interactive geographic map.
 
-You may find these helpful as you work together to organize your project.
+## Dependencies
 
-- [Team Project Ideas](./docs/team_project_ideas.md)
-- [Team Decision Log](./docs/team_decision_log.md)
+-   React
+-   Typescript
+-   Vite
+-   Tailwindcss
+-   Daisyui
+-   Headlessui
+-   Zustand
+-   Axios
+-   Leaflet
+-   React-leaflet
+-   React-leaflet-cluster
+-   Express
+-   Dotenv
+-   Cors
 
-Meeting Agenda templates (located in the `/docs` directory in this repo):
+## How to Run the Project
 
-- Meeting - Voyage Kickoff --> ./docs/meeting-voyage_kickoff.docx
-- Meeting - App Vision & Feature Planning --> ./docs/meeting-vision_and_feature_planning.docx
-- Meeting - Sprint Retrospective, Review, and Planning --> ./docs/meeting-sprint_retrospective_review_and_planning.docx
-- Meeting - Sprint Open Topic Session --> ./docs/meeting-sprint_open_topic_session.docx
+View the live site [here](https://v58-tier3-team-37-client-production.up.railway.app/)
+
+## Local Development Setup
+
+### Prerequisites
+
+-   Node.js installed
+
+### Setup Steps
+
+#### 1. Install dependencies
+
+```bash
+cd client && npm install && cd ../server && npm install
+```
+
+#### 2. Setup environment variables
+
+-   In both the client and server directories, create an `.env` file and add the environment variables as shown on the `.env.example` files.
+
+#### 3. Start the app
+
+```bash
+cd client && npm run dev && cd ../server && npm run dev
+```
 
 ## Our Team
 
-Everyone on your team should add their name along with a link to their GitHub
-& optionally their LinkedIn profiles below. Do this in Sprint #1 to validate
-your repo access and to practice PR'ing with your team *before* you start
-coding!
-
-- Shruti Salunkhe : [GitHub](https://github.com/salunkhesshruti/) / [LinkedIn](https://www.linkedin.com/in/shruti-b/)
-- Teammate name #2: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
-
-   ...
-- Teammate name #n: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
+-   Shruti Salunkhe (Product Owner) : [GitHub](https://github.com/salunkhesshruti/) / [LinkedIn](https://www.linkedin.com/in/shruti-b/)
+-   Hyun Woo Kim (Web Developer): [GitHub](https://github.com/hynwkm) / [LinkedIn](https://www.linkedin.com/in/hyunwoo-kim/)
+-   Jessica Hackett (UI/UX Designer): [GitHub](https://github.com/mooglemoxie0018) / [LinkedIn](https://www.linkedin.com/in/jessica-hackett/)
+-   Michael Salata (Python Developer): [GitHub](https://github.com/MichaelSalata) / [LinkedIn](https://www.linkedin.com/in/michael-salata/)
