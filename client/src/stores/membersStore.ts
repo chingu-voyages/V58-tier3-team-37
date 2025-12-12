@@ -13,16 +13,22 @@ interface MembersActions {
 
 type MembersState = {
   members: Member[];
+  isLoading: boolean;
   actions: MembersActions;
   offset: number;
   limit: number;
 };
 
+const setLoading = (value: boolean) =>
+  useMembersStore.setState({ isLoading: value });
+
 const useMembersStore = create<MembersState>((set) => ({
   members: [],
+  isLoading: false,
   actions: {
     setMembers: (members: Member[]) => set({ members }),
     fetchMembers: async (filters = {}) => {
+      setLoading(true);
       try {
         const state = useMembersStore.getState();
         const result = await getAllMembers(state.offset, filters);
@@ -36,10 +42,13 @@ const useMembersStore = create<MembersState>((set) => ({
       } catch (error) {
         console.error("Failed to fetch members:", error);
         throw error;
+      } finally {
+        setLoading(false);
       }
     },
     fetchAllMembers: async (filters = {}) => {
       try {
+        setLoading(true);
         const MAX_MEMBERS = 1000;
         let totalLoaded = 0;
         let hasMore = true;
@@ -83,6 +92,8 @@ const useMembersStore = create<MembersState>((set) => ({
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoading(false);
       }
     },
     resetMembers: () => set({ members: [] }),
@@ -96,6 +107,8 @@ export const useMembersActions = () =>
   useMembersStore((state) => state.actions);
 
 export const useMembers = () => useMembersStore((state) => state.members);
+
+export const useIsLoading = () => useMembersStore((state) => state.isLoading);
 
 export const useOffset = () => useMembersStore((state) => state.offset);
 export const useLimit = () => useMembersStore((state) => state.limit);
