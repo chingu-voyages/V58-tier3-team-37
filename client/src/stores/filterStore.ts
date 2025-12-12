@@ -1,10 +1,10 @@
 import { create } from "zustand";
 
 interface FilterActions {
-  setCountryName: (countryName: string) => void;
+  setCountryCode: (countryCode: string) => void;
   setGender: (gender: string) => void;
   setRole: (role: string) => void;
-  setSoloProjectTier: (soloProjectTier: string) => void;
+  setSoloProjectTier: (soloProjectTier: number | null) => void;
   setVoyage: (voyage: string) => void;
   setVoyageTier: (voyageTier: string) => void;
   setYearJoined: (yearJoined: string) => void;
@@ -12,10 +12,10 @@ interface FilterActions {
 }
 
 type FilterState = {
-  countryName: string;
+  countryCode: string;
   gender: string;
   role: string;
-  soloProjectTier: string;
+  soloProjectTier: number | null;
   voyage: string;
   voyageTier: string;
   yearJoined: string;
@@ -23,27 +23,28 @@ type FilterState = {
 };
 
 const useFilterStore = create<FilterState>((set) => ({
-  countryName: "",
+  countryCode: "",
   gender: "",
   role: "",
-  soloProjectTier: "",
+  soloProjectTier: null,
   voyage: "",
   voyageTier: "",
   yearJoined: "",
   actions: {
-    setCountryName: (countryName: string) => set({ countryName }),
+    setCountryCode: (countryCode: string) => set({ countryCode }),
     setGender: (gender: string) => set({ gender }),
     setRole: (role: string) => set({ role }),
-    setSoloProjectTier: (soloProjectTier: string) => set({ soloProjectTier }),
+    setSoloProjectTier: (soloProjectTier: number | null) =>
+      set({ soloProjectTier }),
     setVoyage: (voyage: string) => set({ voyage }),
     setVoyageTier: (voyageTier: string) => set({ voyageTier }),
     setYearJoined: (yearJoined: string) => set({ yearJoined }),
     resetFilters: () =>
       set({
-        countryName: "",
+        countryCode: "",
         gender: "",
         role: "",
-        soloProjectTier: "",
+        soloProjectTier: null,
         voyage: "",
         voyageTier: "",
         yearJoined: "",
@@ -53,8 +54,8 @@ const useFilterStore = create<FilterState>((set) => ({
 
 export const useFilterActions = () => useFilterStore((state) => state.actions);
 
-export const useCountryName = () =>
-  useFilterStore((state) => state.countryName);
+export const useCountryCode = () =>
+  useFilterStore((state) => state.countryCode);
 
 export const useGender = () => useFilterStore((state) => state.gender);
 
@@ -70,25 +71,17 @@ export const useVoyageTier = () => useFilterStore((state) => state.voyageTier);
 export const useYearJoined = () => useFilterStore((state) => state.yearJoined);
 
 export const useHasFilters = () => {
-  const {
-    countryName,
-    gender,
-    role,
-    soloProjectTier,
-    voyage,
-    voyageTier,
-    yearJoined,
-  } = useFilterStore((state) => state);
+  const { gender, role, soloProjectTier, voyage, voyageTier, yearJoined } =
+    useFilterStore((state) => state);
 
-  const hasFilters = Object.values({
-    countryName,
+  const hasFilters = [
     gender,
     role,
     soloProjectTier,
     voyage,
     voyageTier,
     yearJoined,
-  }).some((value) => value !== "");
+  ].some((value) => value != null && value !== "");
 
   return hasFilters;
 };

@@ -11,13 +11,14 @@ import {
 import { useEffect } from "react";
 import {
   countries,
+  countryNameMap,
   genders,
   roles,
   soloProjectTiers,
   voyageTiers,
 } from "../constants/filterOptions";
 import {
-  useCountryName,
+  useCountryCode,
   useFilterActions,
   useGender,
   useRole,
@@ -29,14 +30,14 @@ import cn from "../utils/cn";
 
 export default function FilterBar() {
   const gender = useGender();
-  const countryName = useCountryName();
+  const countryCode = useCountryCode();
   const yearJoined = useYearJoined();
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
   const voyageTier = useVoyageTier();
   const {
     setGender,
-    setCountryName,
+    setCountryCode,
     setYearJoined,
     setRole,
     setSoloProjectTier,
@@ -48,8 +49,8 @@ export default function FilterBar() {
       setGender(genders[0]);
     }
 
-    if (!countryName) {
-      setCountryName(countries[0]);
+    if (!countryCode) {
+      setCountryCode("");
     }
 
     if (!yearJoined) {
@@ -67,14 +68,14 @@ export default function FilterBar() {
     if (!voyageTier) {
       setVoyageTier(voyageTiers[0]);
     }
-  }, [gender, countryName, yearJoined, role, soloProjectTier, voyageTier]);
+  }, [gender, countryCode, yearJoined, role, soloProjectTier, voyageTier]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
   };
 
   return (
-    <div className="z-30 flex justify-center p-4">
+    <div className="flex justify-center p-4">
       <form
         onSubmit={(e) => onSubmit(e)}
         className="flex w-full flex-col items-center"
@@ -130,14 +131,14 @@ export default function FilterBar() {
           </Field>
           <Field className="flex flex-col gap-2">
             <Label className="block">Country</Label>
-            <Listbox value={countryName} onChange={setCountryName}>
+            <Listbox value={countryCode} onChange={setCountryCode}>
               <ListboxButton
                 className={cn(
                   "relative block w-96 rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
-                {countryName === "" ? "All" : countryName}
+                {countryCode === "" ? "All" : countryNameMap[countryCode]}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -164,12 +165,14 @@ export default function FilterBar() {
               >
                 {countries.map((country) => (
                   <ListboxOption
-                    key={country}
-                    value={country}
+                    key={country.code}
+                    value={country.code}
                     className="group flex cursor-default items-center gap-2 rounded-lg px-3 py-1.5 select-none data-focus:bg-white/10"
                   >
                     <div className="text-sm/6 text-white">
-                      {country === "" ? "All" : country}
+                      {country.code === ""
+                        ? "All"
+                        : countryNameMap[country.code]}
                     </div>
                   </ListboxOption>
                 ))}
@@ -256,7 +259,7 @@ export default function FilterBar() {
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
-                {soloProjectTier === "" ? "All" : soloProjectTier}
+                {soloProjectTier === null ? "All" : soloProjectTier}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -288,7 +291,7 @@ export default function FilterBar() {
                     className="group flex cursor-default items-center gap-2 rounded-lg px-3 py-1.5 select-none data-focus:bg-white/10"
                   >
                     <div className="text-sm/6 text-white">
-                      {soloProjectTier === "" ? "All" : soloProjectTier}
+                      {soloProjectTier === null ? "All" : soloProjectTier}
                     </div>
                   </ListboxOption>
                 ))}

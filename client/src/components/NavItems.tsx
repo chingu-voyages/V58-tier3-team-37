@@ -5,14 +5,16 @@ export default function NavItems() {
   const location = useLocation();
   const pathName = location.pathname;
   return (
-    <ul className="menu menu-horizontal gap-2">
+    <ul className="menu menu-horizontal flex w-full justify-between gap-2">
       <li
         className={cn(
           pathName === "/" ? "border-b-2" : "",
           "cursor-pointer hover:border-b-2",
         )}
       >
-        <Link to="/">Home</Link>
+        <Link to="/" className="hover:bg-background-brand">
+          Home
+        </Link>
       </li>
       <li
         className={cn(
@@ -20,7 +22,9 @@ export default function NavItems() {
           "cursor-pointer hover:border-b-2",
         )}
       >
-        <Link to="/map">Map</Link>
+        <Link to="/map" className="hover:bg-background-brand">
+          Map
+        </Link>
       </li>
       <li
         className={cn(
@@ -28,7 +32,9 @@ export default function NavItems() {
           "cursor-pointer hover:border-b-2",
         )}
       >
-        <Link to="/list">List</Link>
+        <Link to="/list" className="hover:bg-background-brand">
+          List
+        </Link>
       </li>
     </ul>
   );

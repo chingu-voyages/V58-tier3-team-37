@@ -13,13 +13,14 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   countries,
+  countryNameMap,
   genders,
   roles,
   soloProjectTiers,
   voyageTiers,
 } from "../constants/filterOptions";
 import {
-  useCountryName,
+  useCountryCode,
   useFilterActions,
   useGender,
   useRole,
@@ -31,14 +32,14 @@ import cn from "../utils/cn";
 
 export default function SearchForm() {
   const gender = useGender();
-  const countryName = useCountryName();
+  const countryCode = useCountryCode();
   const yearJoined = useYearJoined();
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
   const voyageTier = useVoyageTier();
   const {
     setGender,
-    setCountryName,
+    setCountryCode,
     setYearJoined,
     setRole,
     setSoloProjectTier,
@@ -51,8 +52,8 @@ export default function SearchForm() {
       setGender(genders[0]);
     }
 
-    if (!countryName) {
-      setCountryName(countries[0]);
+    if (!countryCode) {
+      setCountryCode("");
     }
 
     if (!yearJoined) {
@@ -70,7 +71,7 @@ export default function SearchForm() {
     if (!voyageTier) {
       setVoyageTier(voyageTiers[0]);
     }
-  }, [gender, countryName, yearJoined, role, soloProjectTier, voyageTier]);
+  }, [gender, yearJoined, role, soloProjectTier, voyageTier, countryCode]);
 
   const navigate = useNavigate();
 
@@ -145,14 +146,14 @@ export default function SearchForm() {
           </Field>
           <Field className="flex flex-col gap-2">
             <Label className="block">Country</Label>
-            <Listbox value={countryName} onChange={setCountryName}>
+            <Listbox value={countryCode} onChange={setCountryCode}>
               <ListboxButton
                 className={cn(
                   "relative block w-full rounded-lg bg-white/5 py-1.5 pr-8 pl-3 text-left text-sm/6 text-white",
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
-                {countryName === "" ? "All" : countryName}
+                {countryCode === "" ? "All" : countryNameMap[countryCode]}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -179,12 +180,14 @@ export default function SearchForm() {
               >
                 {countries.map((country) => (
                   <ListboxOption
-                    key={country}
-                    value={country}
+                    key={country.code}
+                    value={country.code}
                     className="group flex cursor-default items-center gap-2 rounded-lg px-3 py-1.5 select-none data-focus:bg-white/10"
                   >
                     <div className="text-sm/6 text-white">
-                      {country === "" ? "All" : country}
+                      {country.code === ""
+                        ? "All"
+                        : countryNameMap[country.code]}
                     </div>
                   </ListboxOption>
                 ))}
@@ -271,7 +274,7 @@ export default function SearchForm() {
                   "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
                 )}
               >
-                {soloProjectTier === "" ? "All" : soloProjectTier}
+                {soloProjectTier === null ? "All" : soloProjectTier}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -303,7 +306,7 @@ export default function SearchForm() {
                     className="group flex cursor-default items-center gap-2 rounded-lg px-3 py-1.5 select-none data-focus:bg-white/10"
                   >
                     <div className="text-sm/6 text-white">
-                      {soloProjectTier === "" ? "All" : soloProjectTier}
+                      {soloProjectTier === null ? "All" : soloProjectTier}
                     </div>
                   </ListboxOption>
                 ))}
@@ -365,7 +368,7 @@ export default function SearchForm() {
               e.preventDefault();
               resetFilters();
             }}
-            className="btn bg-secondary-brand text-background-brand from-secondary-brand to-secondary-gradient w-32 hover:bg-linear-to-b"
+            className="btn bg-primary-brand text-background-brand from-primary-brand to-primary-gradient w-32 hover:bg-linear-to-b"
           >
             Clear Filters
           </button>

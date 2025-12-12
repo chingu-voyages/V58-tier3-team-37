@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FilterBar from "../components/FilterBar";
 import MemberCard from "../components/MemberCard";
 import {
-  useCountryName,
+  useCountryCode,
   useGender,
   useHasFilters,
   useRole,
@@ -21,7 +21,7 @@ export default function ListPage() {
   const members = useMembers();
   const { fetchMembers, resetMembers, resetOffset } = useMembersActions();
   const gender = useGender();
-  const countryName = useCountryName();
+  const countryCode = useCountryCode();
   const yearJoined = useYearJoined();
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
@@ -30,6 +30,7 @@ export default function ListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log(hasFilters);
     if (!hasFilters) {
       navigate("/search", { state: { redirectedFrom: "/list" } });
     }
@@ -40,31 +41,24 @@ export default function ListPage() {
       return false;
     }
     if (
-      countryName !== "" &&
-      member.countryName.toLowerCase() !== countryName.toLowerCase()
+      countryCode !== "" &&
+      member.countryCode.toLowerCase() !== countryCode.toLowerCase()
     ) {
       return false;
     }
     if (
       role.trim() !== "" &&
-      !(
-        role.toLowerCase().includes(member.role.toLowerCase()) ||
-        (member.roleType &&
-          role.toLowerCase().includes(member.roleType.toLowerCase()))
-      )
+      !role.toLowerCase().includes(member.role.toLowerCase())
     ) {
       return false;
     }
     if (
-      soloProjectTier !== "" &&
-      !member.soloProjectTier.toLowerCase().includes(voyageTier.toLowerCase())
+      soloProjectTier !== null &&
+      member.soloProjectTier !== soloProjectTier
     ) {
       return false;
     }
-    if (
-      voyageTier !== "" &&
-      !member.voyageTier.toLowerCase().includes(voyageTier.toLowerCase())
-    ) {
+    if (voyageTier !== "" && !member.voyageTiers.includes(voyageTier)) {
       return false;
     }
     if (
@@ -76,14 +70,14 @@ export default function ListPage() {
     return true;
   });
 
-  const filters = buildFilters(gender, countryName, role, soloProjectTier);
+  const filters = buildFilters(gender, countryCode, role, soloProjectTier);
 
   useEffect(() => {
     resetMembers();
     resetOffset();
     setVisibleCount(20);
     fetchMembers(filters);
-  }, [gender, countryName, role, soloProjectTier]);
+  }, [gender, countryCode, role, soloProjectTier]);
 
   const [visibleCount, setVisibleCount] = useState(20);
 
@@ -127,8 +121,12 @@ export default function ListPage() {
               scrollableTarget="memberScroll"
               className="flex flex-col gap-4"
             >
-              {visibleMembers.map((member, index) => (
-                <MemberCard key={nanoid()} member={member} index={index} />
+              {visibleMembers.map((member) => (
+                <MemberCard
+                  key={member.id + nanoid()}
+                  member={member}
+                  index={member.id}
+                />
               ))}
             </InfiniteScroll>
           )}
