@@ -26,6 +26,7 @@ import {
   useVoyageTier,
   useYearJoined,
 } from "../stores/filterStore";
+import { useIsLoading } from "../stores/membersStore";
 import cn from "../utils/cn";
 
 export default function FilterBar() {
@@ -43,6 +44,7 @@ export default function FilterBar() {
     setSoloProjectTier,
     setVoyageTier,
   } = useFilterActions();
+  const isLoading = useIsLoading();
 
   useEffect(() => {
     if (!gender) {
@@ -362,6 +364,9 @@ export default function FilterBar() {
           </button>
         </div> */}
       </form>
+      {isLoading && (
+        <div className="pointer-events-auto absolute inset-0 cursor-not-allowed bg-black/0"></div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,11 @@ import {
   useVoyageTier,
   useYearJoined,
 } from "../stores/filterStore";
-import { useMembers, useMembersActions } from "../stores/membersStore";
+import {
+  useIsLoading,
+  useMembers,
+  useMembersActions,
+} from "../stores/membersStore";
 import buildFilters from "../utils/buildFilters";
 
 export default function ListPage() {
@@ -26,6 +30,7 @@ export default function ListPage() {
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
   const voyageTier = useVoyageTier();
+  const isLoading = useIsLoading();
 
   const navigate = useNavigate();
 
@@ -102,7 +107,11 @@ export default function ListPage() {
           id="membersScroll"
           className="scrollbar-hidden h-screen w-full max-w-3xl overflow-y-auto"
         >
-          {visibleMembers.length === 0 ? (
+          {isLoading ? (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="loading loading-spinner loading-xl"></span>
+            </div>
+          ) : visibleMembers.length === 0 ? (
             <div>
               <p>No members found matching the selected filters.</p>
               <button
