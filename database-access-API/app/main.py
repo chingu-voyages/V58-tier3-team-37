@@ -44,7 +44,7 @@ def return_status() -> str:
 @app.get("/chingu_members/chingu_attributes")
 async def get_categorical_columns() -> List[str]:
     """List all allowed Chingu Attributes"""
-    return [attribute.value for attribute in (CategoricalAttribute)]
+    return [attribute.value for attribute in (Attribute)]
 
 # ---------------------------------------------------------------
 
@@ -66,20 +66,40 @@ class AttributeLists(str, Enum):
     VOYAGE_SIGNUP_IDS = "Voyage_Signup_ids"
     VOYAGE_TIERS = "Voyage_Tiers"
 
-list_attributes = {"Voyage_Signup_ids", "Voyage_Tiers"}
+
+def make_attribute_enum():
+    entries = {e.name: e.value for e in CategoricalAttribute}
+    entries.update({e.name: e.value for e in AttributeLists})
+    return Enum("Attribute", entries)
+
+Attribute = make_attribute_enum()
+
 int_attributes = {"Solo_Project_Tier", "GMT_Offset", "Voyage_Signup_ids"}
 
-@app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int])
-async def get_unique_values(chingu_attribute: CategoricalAttribute) -> List[str | int]:
+@app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int | None])
+async def get_unique_values(chingu_attribute: Attribute) -> List[str | int]:
     """Return all unique values in {chingu_attribute}."""
+    try:
+        if chingu_attribute.name in AttributeLists.__members__:
+            query = f"""
+                SELECT DISTINCT v AS value
+                FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`,
+                UNNEST(`{chingu_attribute.value}`) AS v
+            """
+        else:
+            query = f"""
+                SELECT DISTINCT `{chingu_attribute.value}` AS value
+                FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
+            """
 
-    # TODO: update this to return distinct attributes in AttributeLists as well
-    query = f"""SELECT DISTINCT `{chingu_attribute.value}` FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`"""
-    
-    query_result = bigquery_client.query(query).result()
-    unique_values = [row[chingu_attribute.value] for row in query_result if row[chingu_attribute.value] is not None]
+        query_result = bigquery_client.query(query).result()
+        unique_values = [row["value"] for row in query_result]
 
-    return unique_values
+        return unique_values
+    except GoogleCloudError as e:
+        raise HTTPException(status_code=502, detail=f"BigQuery error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ---------------------------------------------------------------
 
@@ -196,7 +216,7 @@ async def query_filtered_table(
     """Returns rows from the Chingu members table. Result is filtered by given attributes in the request body."""
     
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
-
+    
     job_config = bigquery.QueryJobConfig(
         dry_run=False,
         use_query_cache=True,
