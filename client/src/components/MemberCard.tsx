@@ -5,6 +5,7 @@ import NonBinaryIcon from "../icons/NonBinaryIcon";
 import TransgenderIcon from "../icons/TransgenderIcon";
 import type { Member } from "../types/member";
 import cn from "../utils/cn";
+import { RoleIcon } from "./RoleIcon";
 
 export default function MemberCard({
   member,
@@ -35,12 +36,12 @@ export default function MemberCard({
       className="flex cursor-pointer flex-col rounded-md border p-4 shadow-md"
     >
       <div className="mb-2 flex justify-between border-b pb-2">
-        <h3>Chingu_{index + 1}</h3>
+        <h3>Chingu_{index}</h3>
         {genderIcons[member.gender.toLowerCase() as keyof typeof genderIcons]}
       </div>
       <div className="flex flex-col gap-2">
-        <p>
-          Role: {member.roleType} {member.role}
+        <p className="flex gap-1">
+          Role: {RoleIcon[member.role] ?? null} {member.role}
         </p>
         <p>Member Since: {memberSinceYear}</p>
         <p>Country: {member.countryName}</p>
@@ -52,7 +53,7 @@ export default function MemberCard({
         )}
       >
         <p>Solo Project Tier: {member.soloProjectTier}</p>
-        <p>Voyage Tier: {member.voyageTier}</p>
+        <p>Voyage Tier: {member.voyageTiers.map((tier) => tier + ",")}</p>
         <p>Goal: {member.goal}</p>
       </div>
     </div>

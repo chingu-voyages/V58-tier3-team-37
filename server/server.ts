@@ -22,7 +22,7 @@ app.get("/", (_req, res) => {
 app.post("/members", async (req, res) => {
     try {
         const response = await axios.post(
-            "https://chingu-members-api-12086067540.us-central1.run.app/v1/chingu_members/table/filtered",
+            "https://chingu-members-api-v3-12086067540.us-central1.run.app/chingu_members/table/filtered",
             req.body,
             {
                 params: req.query,
@@ -33,6 +33,18 @@ app.post("/members", async (req, res) => {
             }
         );
 
+        res.json(response.data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Request failed", details: err });
+    }
+});
+
+app.get("/countries", async (_req, res) => {
+    try {
+        const response = await axios.get(
+            "https://chingu-members-api-v3-12086067540.us-central1.run.app/chingu_members/Country_Code/UNIQUE"
+        );
         res.json(response.data);
     } catch (err) {
         console.error(err);

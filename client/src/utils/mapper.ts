@@ -2,20 +2,19 @@ import type { Member } from "../types/member";
 
 const mapper = (raw: any): Member => {
   return {
-    email: raw.Email,
-    timestamp: raw.Timestamp,
-    gender: raw.Gender,
+    id: raw.id,
     countryCode: raw.Country_Code,
+    countryName: raw.Country_Name,
+    gender: raw.Gender,
     goal: raw.Goal,
     goalOther: raw.Goal_Other,
+    role: raw.Role,
+    soloProjectTier: raw.Solo_Project_Tier,
     source: raw.Source,
     sourceOther: raw.Source_Other,
-    countryName: raw.Country_name_from_Country,
-    soloProjectTier: raw.Solo_Project_Tier,
-    roleType: raw.Role_Type,
-    role: raw.Role,
-    voyage: raw.Voyage_from_Voyage_Signups,
-    voyageTier: raw.Voyage_Tier,
+    timestamp: raw.Timestamp,
+    voyageSignupIds: raw.Voyage_Signup_ids,
+    voyageTiers: raw.Voyage_Tiers,
   };
 };
 

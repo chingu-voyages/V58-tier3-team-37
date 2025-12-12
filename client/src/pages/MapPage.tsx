@@ -12,7 +12,7 @@ import countries from "../assets/countries.json";
 import markerIcon from "../assets/images/maps-and-flags.png";
 import FilterBar from "../components/FilterBar";
 import {
-  useCountryName,
+  useCountryCode,
   useGender,
   useHasFilters,
   useRole,
@@ -82,7 +82,7 @@ export default function MapPage() {
   const members = useMembers();
   const { fetchAllMembers, resetMembers, resetOffset } = useMembersActions();
   const gender = useGender();
-  const countryName = useCountryName();
+  const countryCode = useCountryCode();
   const yearJoined = useYearJoined();
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
@@ -94,21 +94,21 @@ export default function MapPage() {
     }
   }, [hasFilters]);
 
-  const filters = buildFilters(gender, countryName, role, soloProjectTier);
+  const filters = buildFilters(gender, countryCode, role, soloProjectTier);
 
   useEffect(() => {
     resetMembers();
     resetOffset();
     fetchAllMembers(filters);
-  }, [gender, countryName, role, soloProjectTier]);
+  }, [gender, countryCode, role, soloProjectTier]);
 
   const filteredMembers = members.filter((member) => {
     if (gender !== "" && member.gender.toLowerCase() !== gender.toLowerCase()) {
       return false;
     }
     if (
-      countryName !== "" &&
-      member.countryName.toLowerCase() !== countryName.toLowerCase()
+      countryCode !== "" &&
+      member.countryCode.toLowerCase() !== countryCode.toLowerCase()
     ) {
       return false;
     }
@@ -116,15 +116,12 @@ export default function MapPage() {
       return false;
     }
     if (
-      soloProjectTier !== "" &&
-      member.soloProjectTier.toLowerCase() !== soloProjectTier.toLowerCase()
+      soloProjectTier !== null &&
+      member.soloProjectTier !== soloProjectTier
     ) {
       return false;
     }
-    if (
-      voyageTier !== "" &&
-      member.voyageTier.toLowerCase() !== voyageTier.toLowerCase()
-    ) {
+    if (voyageTier !== "" && !member.voyageTiers.includes(voyageTier)) {
       return false;
     }
     if (
@@ -138,19 +135,20 @@ export default function MapPage() {
 
   const countryLookup = Object.fromEntries(
     countries.map((c) => [
-      c.country, // AD, US, CA etc
+      c.country,
       { lat: c.latitude, lng: c.longitude, name: c.name },
     ]),
   );
 
   const markers = useMemo(() => {
     return filteredMembers
-      .map((member, index) => {
+      .map((member) => {
         const data = countryLookup[member.countryCode];
         if (!data) return null;
         return {
           position: [data.lat, data.lng],
-          popupText: `Chingu_${index + 1}`,
+          popupText: `Chingu_${member.id}`,
+          id: member.id,
         };
       })
       .filter(Boolean);
@@ -199,7 +197,7 @@ export default function MapPage() {
               }
               return (
                 <Marker
-                  key={nanoid()}
+                  key={marker.id + nanoid()}
                   position={[marker.position[0], marker.position[1]]}
                   icon={customIcon}
                 >

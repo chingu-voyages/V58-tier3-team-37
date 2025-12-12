@@ -1,16 +1,15 @@
 export type Member = {
-  email: string;
-  timestamp: string;
-  gender: string;
+  id: number;
   countryCode: string;
+  countryName: string;
+  gender: string;
   goal: string;
   goalOther: string;
+  role: string;
+  soloProjectTier: number;
   source: string;
   sourceOther: string;
-  countryName: string;
-  soloProjectTier: string;
-  roleType: string;
-  role: string;
-  voyage: string;
-  voyageTier: string;
+  timestamp: string;
+  voyageSignupIds: number;
+  voyageTiers: string[];
 };
