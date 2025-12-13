@@ -42,12 +42,12 @@ FastAPI Endpoints (BigQuery-backed):
 3. For the Cloud Run, API deployment fill in `REGION` a `SERVICE_NAME`
 
 ## 3. Configure a Service Account
-Grant least-privilege roles needed for read access:
+Grant least-privilege roles needed for read access to your BigQuery Database:
 - BigQuery Data Viewer
 - BigQuery Job User
 - Cloud Run Invoker (optional; use —allow-unauthenticated for public access)
 
-To your `/database-access-API/app/.env` file add a `SERVICE_ACCOUNT` variable with the name of the service account you created
+To your `/database-access-API/app/.env` file complete the `SERVICE_ACCOUNT` variable with the name of the service account you created
 - e.g. `SERVICE_ACCOUNT=bq-queryer-service@GCP_PROJECT_ID.iam.gserviceaccount.com`
 
 ## 4. Build & Deploy
@@ -61,13 +61,6 @@ bash ./launch-cloud-run.sh
 ## 5. Test the API
 - Visit the Cloud Run URL root (/) to confirm the active BigQuery table
 - Add `/docs` to the URL for an interactive Swagger UI
-- Example payload for filtered queries:
-```json
-{
-  "include": { "Gender": ["FEMALE", "NON-BINARY"] },
-  "exclude": { "Goal": ["GAIN EXPERIENCE"], "Source": ["LinkedIn", "OTHER"] }
-}
-```
 
 ## 6. Shut Down
 Delete the Cloud Run service and container image if needed:
@@ -77,7 +70,7 @@ gcloud container images delete gcr.io/GCP_PROJECT_ID/SERVICE_NAME:latest --force
 ```
 
 # Special Thanks
-Thanks to the Chingu community and DataTalks Club for their resources and examples that helped shape this service.
+Thanks to the Chingu community and [Saverio Mazza](https://github.com/mazzasaverio) for their resources and his examples that helped shape this service.
 
 # Future Goals
 - [x] initial Cloud Run deployment
