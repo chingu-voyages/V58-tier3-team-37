@@ -17,10 +17,12 @@ pip install -r requirements.txt
 ```bash
 python3 cleaning_chingu_demographics.py > /dev/null
 ```
+The clean chingu member data will now be saved to `data_cleaning/data/chingu_members_cleaned.json`
 
 # How to Upload to Google BigQuery
-1. go to https://console.cloud.google.com/bigquery?project=PROJECT_NAME
-	- Fill in `PROJECT_NAME` with your own project name
+0. Create a google cloud project at https://cloud.google.com
+1. go to https://console.cloud.google.com/bigquery?project=PROJECT_ID
+	- Fill in `PROJECT_ID` with your own project name
 2. in the `Explorer` panel (on middle-left) click on `Add Data`
 3. `Local File`
 4. Fill in the appropriate `Source` and `Destination`
@@ -48,4 +50,4 @@ python3 cleaning_chingu_demographics.py > /dev/null
 NOTE: This is the same as `data_cleaning/bigquery_schema.json`
 
 # Connect the Data to the API
-Add BigQuery `PROJECT_NAME`, `DATASET` and `TABLE` to the environment varables for the API in `/database-access-API/app/.env`
+Add BigQuery's `GCP_PROJECT_ID`, `DATASET` and `TABLE` to the API's environment varables in `/database-access-API/app/.env`
