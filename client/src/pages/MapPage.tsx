@@ -20,11 +20,7 @@ import {
   useVoyageTier,
   useYearJoined,
 } from "../stores/filterStore";
-import {
-  useIsLoading,
-  useMembers,
-  useMembersActions,
-} from "../stores/membersStore";
+import { useMembers, useMembersActions } from "../stores/membersStore";
 import buildFilters from "../utils/buildFilters";
 
 const customIcon = new Icon({
@@ -91,7 +87,7 @@ export default function MapPage() {
   const role = useRole();
   const soloProjectTier = useSoloProjectTier();
   const voyageTier = useVoyageTier();
-  const isLoading = useIsLoading();
+  //   const isLoading = useIsLoading();
 
   useEffect(() => {
     if (!hasFilters) {
