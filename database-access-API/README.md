@@ -20,7 +20,6 @@ FastAPI Endpoints (BigQuery-backed):
 3. GET /chingu_members/{attribute}/UNIQUE — distinct values for an attribute
 4. GET /chingu_members/{attribute}/COUNT — counts per attribute, optional date range
 5. POST /chingu_members/table/filtered — filtered rows with LIMIT/OFFSET pagination
-6. POST /chingu_members/{attribute}/COUNT/filtered — counts per attribute, filtered
 7. POST /chingu_members/Country_Code/COUNT/filtered — shortcut for Country_Code counts
 
 # Technologies Used
@@ -37,21 +36,19 @@ FastAPI Endpoints (BigQuery-backed):
 - BigQuery dataset and table with member data
 - Container Registry or Artifact Registry enabled
 
-## 2. Configure a Service Account
+## 2. Environment Configuration
+1. Remove "sample" from the name of the `/database-access-API/app/sample.env` file
+2. In the new `.env` file, enter details for your BigQuery chingu_member_table: `GCP_PROJECT_ID`, `DATASET`, `TABLE`
+3. For the Cloud Run, API deployment fill in `REGION` a `SERVICE_NAME`
+
+## 3. Configure a Service Account
 Grant least-privilege roles needed for read access:
 - BigQuery Data Viewer
 - BigQuery Job User
 - Cloud Run Invoker (optional; use —allow-unauthenticated for public access)
 
-You can reuse or create a service account, then set it in launch-cloud-run.sh:
-- SERVICE_ACCOUNT=bq-queryer-service@v58-tier3-team-37.iam.gserviceaccount.com
-
-## 3. Environment Configuration
-Defaults are set in app/main.py, but can be overridden via env vars:
-- GCP_PROJECT_ID (default: v58-tier3-team-37)
-- DATASET (default: chingu_members)
-- TABLE (default: chingu_members_extra_clean)
-- IS_PRODUCTION (set to True on Cloud Run; local dev can use GOOGLE_APPLICATION_CREDENTIALS)
+To your `/database-access-API/app/.env` file add a `SERVICE_ACCOUNT` variable with the name of the service account you created
+- e.g. `SERVICE_ACCOUNT=bq-queryer-service@GCP_PROJECT_ID.iam.gserviceaccount.com`
 
 ## 4. Build & Deploy
 Use the helper script to build the Docker image and deploy to Cloud Run:
@@ -63,7 +60,7 @@ bash ./launch-cloud-run.sh
 
 ## 5. Test the API
 - Visit the Cloud Run URL root (/) to confirm the active BigQuery table
-- Use /docs for interactive Swagger UI
+- Add `/docs` to the URL for an interactive Swagger UI
 - Example payload for filtered queries:
 ```json
 {
@@ -75,8 +72,8 @@ bash ./launch-cloud-run.sh
 ## 6. Shut Down
 Delete the Cloud Run service and container image if needed:
 ```bash
-gcloud run services delete chingu-members-api-v2 --region us-central1 --project v58-tier3-team-37
-gcloud container images delete gcr.io/v58-tier3-team-37/chingu-members-api-v2:latest --force-delete-tags
+gcloud run services delete SERVICE_NAME --region REGION --project GCP_PROJECT_ID
+gcloud container images delete gcr.io/GCP_PROJECT_ID/SERVICE_NAME:latest --force-delete-tags
 ```
 
 # Special Thanks
@@ -84,6 +81,5 @@ Thanks to the Chingu community and DataTalks Club for their resources and exampl
 
 # Future Goals
 - [x] initial Cloud Run deployment
-- [ ] add rate limiting and auth (API key or OAuth)
-- [ ] expand attribute support for lists (e.g., Voyage_Tiers) with DISTINCT across arrays
 - [ ] CI/CD pipeline with automated tests and staging
+- [ ] add rate limiting and auth (API key or OAuth)
