@@ -1,3 +1,66 @@
+# Virtual environments
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+*.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Large data directories
+data/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Model files and outputs
+*.model
+*.joblib
+models/
+checkpoints/
+
+# Cache directories
+.cache/
+.pytest_cache/
+
+
 # Logs
 logs
 *.log
@@ -25,4 +88,5 @@ dist-ssr
 
 .prettierrc
 
+# Environment variables
 .env
