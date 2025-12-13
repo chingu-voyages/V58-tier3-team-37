@@ -1,4 +1,3 @@
 pandas
-ipykernel
 requests
 country_converter
