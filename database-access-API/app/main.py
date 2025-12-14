@@ -10,6 +10,7 @@ from datetime import date
 from typing import Any, List, Optional, Dict
 from enum import Enum
 
+from asyncio import gather
 from pydantic import BaseModel, Field
 from fastapi import Body, FastAPI, HTTPException, Query
 
@@ -76,6 +77,8 @@ Attribute = make_attribute_enum()
 
 int_attributes = {"Solo_Project_Tier", "GMT_Offset", "Voyage_Signup_ids"}
 
+unique_value_cache: Dict[str, set[str | int]] = {}
+
 @app.get("/chingu_members/{chingu_attribute}/UNIQUE", response_model=List[str | int | None])
 async def get_unique_values(chingu_attribute: Attribute) -> List[str | int]:
     """Return all unique values in {chingu_attribute}."""
@@ -103,6 +106,23 @@ async def get_unique_values(chingu_attribute: Attribute) -> List[str | int]:
 
 # ---------------------------------------------------------------
 
+# prefill a cache of acceptable attributes to speed up queries and avoid SQL injection for filters
+@app.on_event("startup")
+async def prefill_filter_cache():
+    global unique_value_cache
+    try:
+        buffer = {attr.value: get_unique_values(attr) for attr in Attribute}
+        results = await gather(*buffer.values())
+        unique_value_cache = {attr_val: set(res) for attr_val, res in zip(buffer.keys(), results)}
+    except GoogleCloudError as gce:
+        print(f"[startup] Unable to reach BigQuery {gce}")
+        unique_value_cache = {}
+    except Exception as e:
+        print(f"[startup] Unexpected error trying to reach BigQuery: {e}")
+        unique_value_cache = {}
+
+# ---------------------------------------------------------------
+
 class CountResponse(BaseModel):
     row_count: int
     response_schema: List[str]
@@ -122,14 +142,6 @@ async def get_unique_count(
 ) -> Dict[str, Any]:
     """Returns the number of rows for each unique value in {chingu_attribute}.
     """
-
-    # TODO: Union List attributes, implment DISTINCT among lists:
-    # if chingu_attribute in AttributeLists:
-    #     SELECT DISTINCT x
-    #     FROM your_table t,
-    #     UNNEST(t.arr_col) AS x
-    #     ORDER BY x;
-
 
     query_sql = f"""SELECT `{chingu_attribute.value}`, Count(*) as count
         FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}`
@@ -188,6 +200,21 @@ class FilterBody(BaseModel):
     include: Optional[Dict[CategoricalAttribute | AttributeLists, List[str | int]]] = Field(default_factory=dict, description="Whitelisted Chingu Attributes")
     exclude: Optional[Dict[CategoricalAttribute | AttributeLists, List[str | int]]] = Field(default_factory=dict, description="Blacklisted Chingu Attributes")
 
+def validate_FilterBody(filters: FilterBody):
+    # Fast fail if cache is empty (e.g., BigQuery unreachable at startup)
+    if not unique_value_cache:
+        raise HTTPException(status_code=502, detail="Filter cache unavailable; service failed to warm with BigQuery")
+    
+    for attr_enum, attributes in filters.include.items():
+        invalid_values = set(attributes) - unique_value_cache.get(attr_enum.value, set()) 
+        if invalid_values:
+            raise HTTPException(status_code=400, detail=f"Invalid include values for {attr_enum.value}: {invalid_values}")
+    
+    for attr_enum, attributes in filters.exclude.items():
+        invalid_values = set(attributes) - unique_value_cache.get(attr_enum.value, set()) 
+        if invalid_values:
+            raise HTTPException(status_code=400, detail=f"Invalid exclude values for {attr_enum.value}: {invalid_values}")
+
 
 class FilteredTableResponse(BaseModel):
     row_count: int
@@ -215,6 +242,8 @@ async def query_filtered_table(
     ) -> Dict[str, Any]:
     """Returns rows from the Chingu members table. Result is filtered by given attributes in the request body."""
     
+    validate_FilterBody(filters)
+
     query_sql = f"""SELECT * FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
     
     job_config = bigquery.QueryJobConfig(
@@ -297,6 +326,9 @@ async def filter_country_code_count(
         filters: FilterBody = Body()
     ) -> Dict[str, Any]:
     """Returns the COUNT of Chingu members in each Country_Code. Result is filtered by given attributes in the request body."""
+    
+    validate_FilterBody(filters)
+
     query_sql = f"""SELECT `{CategoricalAttribute.COUNTRY_CODE.value}`, COUNT(*) as count FROM `{GCP_PROJECT_ID}.{DATASET}.{TABLE}` WHERE 1=1"""
 
     job_config = bigquery.QueryJobConfig(
