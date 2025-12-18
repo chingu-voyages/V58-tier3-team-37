@@ -1,6 +1,6 @@
 
 # Parse values directly from terraform.tfvars
-ENV_FILE=app/.env
+ENV_FILE=../app/.env
 
 GCP_PROJECT_ID=$(grep '^GCP_PROJECT_ID' "$ENV_FILE" | awk -F'=' '{print $2}' | tr -d ' "')
 DATASET=$(grep '^DATASET' "$ENV_FILE" | awk -F'=' '{print $2}' | tr -d ' "')
