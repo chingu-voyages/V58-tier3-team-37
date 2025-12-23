@@ -2,4 +2,5 @@ fastapi
 uvicorn[standard]
 google-cloud-bigquery
 pydantic
+pydantic_settings
 python-dotenv

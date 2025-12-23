@@ -53,7 +53,7 @@ To your `/database-access-API/app/.env` file complete the `SERVICE_ACCOUNT` vari
 ## 4. Build & Deploy
 Use the helper script to build the Docker image and deploy to Cloud Run:
 ```bash
-bash ./launch-cloud-run.sh
+bash ./scripts/launch-cloud-run.sh
 ```
 - gcloud builds submit — builds and pushes the container image
 - gcloud run deploy — deploys the service, assigns the service account, and sets public access
